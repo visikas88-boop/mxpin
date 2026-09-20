@@ -31,7 +31,7 @@ jobs:
             echo "首次部署：克隆仓库..."
             mkdir -p /var/www
             cd /var/www
-            git clone ${{ secrets.GITHUB_REPO_URL }} videoflow-pro
+            git clone ${{ secrets.REPO_URL }} videoflow-pro
             cd videoflow-pro
           else
             echo "更新代码..."
