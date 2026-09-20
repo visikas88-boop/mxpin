@@ -1,0 +1,84 @@
+name: Deploy to Vultr Server
+
+on:
+  push:
+    branches:
+      - main  # 当推送到main分支时触发
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy to Vultr Server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: 22
+        script: |
+          echo "=========================================="
+          echo "开始自动部署 VideoFlow Pro"
+          echo "=========================================="
+
+          # 进入项目目录（如果不存在则克隆）
+          if [ ! -d "/var/www/videoflow-pro" ]; then
+            echo "首次部署：克隆仓库..."
+            mkdir -p /var/www
+            cd /var/www
+            git clone ${{ secrets.GITHUB_REPO_URL }} videoflow-pro
+            cd videoflow-pro
+          else
+            echo "更新代码..."
+            cd /var/www/videoflow-pro
+            git fetch origin
+            git reset --hard origin/main
+            git pull origin main
+          fi
+
+          echo "当前分支和提交："
+          git branch
+          git log -1 --oneline
+
+          # 安装/更新后端依赖
+          echo ""
+          echo "安装后端依赖..."
+          cd /var/www/videoflow-pro/server
+          npm install --production
+
+          # 构建前端
+          echo ""
+          echo "构建前端..."
+          cd /var/www/videoflow-pro/web
+          npm install
+          npm run build
+
+          # 重启后端服务
+          echo ""
+          echo "重启后端服务..."
+          pm2 restart videoflow-backend || pm2 start npm --name "videoflow-backend" -- start
+
+          # 重载Nginx
+          echo ""
+          echo "重载Nginx..."
+          systemctl reload nginx
+
+          # 验证部署
+          echo ""
+          echo "验证部署..."
+          sleep 2
+          curl -f http://localhost:3001/health || echo "警告：后端健康检查失败"
+
+          echo ""
+          echo "=========================================="
+          echo "✅ 部署完成！"
+          echo "时间: $(date)"
+          echo "=========================================="
+
+          # 显示服务状态
+          pm2 status

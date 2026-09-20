@@ -1,0 +1,253 @@
+========================================
+GitHub Actions 自动部署 - 快速开始
+========================================
+
+🎯 目标：实现 git push 自动部署到服务器
+
+📋 需要完成的步骤（按顺序）：
+
+========================================
+步骤1：配置GitHub Secrets（5分钟）
+========================================
+
+1. 打开GitHub仓库：
+   https://github.com/basketikun/infinite-canvas
+
+2. 点击 Settings → Secrets and variables → Actions
+
+3. 点击 "New repository secret" 添加4个Secrets：
+
+   Secret 1:
+   Name: SERVER_HOST
+   Value: 45.32.65.132
+
+   Secret 2:
+   Name: SERVER_USER
+   Value: root
+
+   Secret 3:
+   Name: SERVER_PASSWORD
+   Value: [3EriKL4x*gFy]Ky
+
+   Secret 4:
+   Name: GITHUB_REPO_URL
+   Value: https://github.com/basketikun/infinite-canvas.git
+
+✅ 完成后进入步骤2
+
+========================================
+步骤2：推送GitHub Actions配置（2分钟）
+========================================
+
+在本地PowerShell执行：
+
+cd F:\Aipost
+
+# 查看要提交的文件
+git status
+
+# 添加文件
+git add .github/workflows/deploy.yml
+git add .gitignore
+git add deploy/first-deploy-github.sh
+git add deploy/GITHUB-ACTIONS-SETUP.md
+
+# 提交
+git commit -m "feat: add GitHub Actions auto-deploy workflow"
+
+# 推送到GitHub
+git push origin main
+
+✅ 完成后进入步骤3
+
+========================================
+步骤3：首次服务器部署（15-20分钟）
+========================================
+
+这一步只需执行一次！
+
+1. 打开Vultr控制台：
+   https://my.vultr.com
+
+2. 点击服务器 → View Console
+
+3. 登录：root / [3EriKL4x*gFy]Ky
+
+4. 复制并执行以下命令（整段）：
+
+# 创建部署脚本
+cat > /tmp/first-deploy.sh << 'EOFSCRIPT'
+#!/bin/bash
+set -e
+
+echo "开始首次部署..."
+
+# 更新系统
+apt-get update -qq
+
+# 安装基础工具
+apt-get install -y curl wget git vim build-essential
+
+# 安装Node.js 18.x
+if ! command -v node &> /dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
+fi
+
+# 安装PostgreSQL
+if ! command -v psql &> /dev/null; then
+    apt-get install -y postgresql postgresql-contrib
+    systemctl start postgresql
+    systemctl enable postgresql
+fi
+
+# 安装Nginx
+if ! command -v nginx &> /dev/null; then
+    apt-get install -y nginx
+    systemctl start nginx
+    systemctl enable nginx
+fi
+
+# 安装PM2
+npm install -g pm2
+
+# 配置数据库
+sudo -u postgres psql << 'EOSQL'
+CREATE DATABASE IF NOT EXISTS videoflow_pro;
+CREATE USER IF NOT EXISTS videoflow WITH PASSWORD 'Mp112233@';
+GRANT ALL PRIVILEGES ON DATABASE videoflow_pro TO videoflow;
+\c videoflow_pro
+GRANT ALL ON SCHEMA public TO videoflow;
+EOSQL
+
+# 克隆项目
+mkdir -p /var/www
+cd /var/www
+if [ ! -d "videoflow-pro" ]; then
+    git clone https://github.com/basketikun/infinite-canvas.git videoflow-pro
+fi
+cd videoflow-pro
+
+# 配置环境变量
+cat > server/.env << 'EOF'
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=videoflow_pro
+DB_USER=videoflow
+DB_PASSWORD=Mp112233@
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+PORT=3001
+NODE_ENV=production
+CORS_ORIGIN=http://45.32.65.132
+EOF
+
+cat > web/.env.production << 'EOF'
+VITE_API_BASE_URL=http://45.32.65.132/api
+VITE_APP_NAME=VideoFlow Pro
+EOF
+
+# 安装依赖
+cd server && npm install --production
+cd ../web && npm install && npm run build
+
+# 配置Nginx
+cat > /etc/nginx/sites-available/videoflow-pro << 'EOFNGINX'
+server {
+    listen 80;
+    server_name 45.32.65.132;
+    client_max_body_size 100M;
+
+    location / {
+        root /var/www/videoflow-pro/web/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOFNGINX
+
+ln -sf /etc/nginx/sites-available/videoflow-pro /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+nginx -t && systemctl reload nginx
+
+# 启动服务
+cd /var/www/videoflow-pro/server
+pm2 start npm --name "videoflow-backend" -- start
+pm2 save
+pm2 startup
+
+echo "✅ 首次部署完成！"
+echo "访问: http://45.32.65.132"
+EOFSCRIPT
+
+# 执行脚本
+chmod +x /tmp/first-deploy.sh
+bash /tmp/first-deploy.sh
+
+✅ 看到 "首次部署完成" 后进入步骤4
+
+========================================
+步骤4：测试自动部署（3分钟）
+========================================
+
+在本地PowerShell执行：
+
+cd F:\Aipost
+
+# 修改README测试
+echo "# Auto deploy test" >> README.md
+
+# 提交并推送
+git add README.md
+git commit -m "test: auto deploy"
+git push
+
+然后：
+1. 打开GitHub仓库 → Actions标签
+2. 查看正在运行的workflow
+3. 等待显示绿色✅（约2-3分钟）
+4. 访问 http://45.32.65.132 验证
+
+✅ 如果部署成功，配置完成！
+
+========================================
+🎉 完成！以后只需：
+========================================
+
+git add .
+git commit -m "feat: 新功能"
+git push
+
+GitHub Actions 会自动部署到服务器！
+
+========================================
+常用命令
+========================================
+
+# 查看服务器日志（在Vultr控制台）
+pm2 logs videoflow-backend
+
+# 查看部署状态
+pm2 status
+
+# 手动重启服务
+pm2 restart videoflow-backend
+
+# 查看GitHub Actions日志
+访问：https://github.com/basketikun/infinite-canvas/actions
+
+========================================
+需要帮助？
+========================================
+
+查看详细文档：
+F:\Aipost\deploy\GITHUB-ACTIONS-SETUP.md
+
+或查看GitHub Actions运行日志找出问题。
+
+========================================

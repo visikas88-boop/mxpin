@@ -9,9 +9,33 @@ data/
 .DS_Store
 .idea
 web/dist
+.codex-project/
+.vscode-codex-data/
 
 **/dist
 web/public/plugins
 plugins/canvas/*/dist
 plugins/canvas/*/node_modules
 web/public/plugins
+
+# 部署相关敏感文件
+AiAPIKey
+*.pid
+backend.pid
+frontend.pid
+logs/
+*.txt
+!deploy/*.txt
+!deploy/*.md
+
+# 本地测试文件
+*.html
+!web/public/*.html
+*.sql
+!deploy/*.sql
+
+# 临时文件
+deploy-package/
+server/.env
+web/.env.local
+web/.env.production.local
