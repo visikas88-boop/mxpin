@@ -1,0 +1,95 @@
+=========================================================
+VideoFlow Pro - GitHub Actions 自动部署快速配置
+=========================================================
+
+📍 第一步：配置GitHub Secrets（5分钟）
+---------------------------------------------------------
+
+直接访问配置页面：
+https://github.com/visikas88-boop/mxpin/settings/secrets/actions
+
+点击 "New repository secret" 按钮，依次添加4个密钥：
+
+1️⃣ SERVER_HOST
+   值：45.32.65.132
+
+2️⃣ SERVER_USER
+   值：root
+
+3️⃣ SERVER_PASSWORD
+   值：[你的Vultr服务器root密码]
+
+4️⃣ REPO_URL
+   值：https://github.com/visikas88-boop/mxpin.git
+
+
+📍 第二步：触发自动部署（1分钟）
+---------------------------------------------------------
+
+访问部署页面：
+https://github.com/visikas88-boop/mxpin/actions/workflows/deploy.yml
+
+步骤：
+1. 点击右侧 "Run workflow" 按钮
+2. 确认分支为 "main"
+3. 点击绿色的 "Run workflow" 按钮
+4. 等待5-10分钟完成部署
+
+
+📍 第三步：查看部署进度
+---------------------------------------------------------
+
+在这个页面实时查看部署日志：
+https://github.com/visikas88-boop/mxpin/actions
+
+点击最新的工作流运行 → deploy 任务 → 展开步骤查看详细日志
+
+
+📍 部署完成后访问
+---------------------------------------------------------
+
+前端：http://45.32.65.132
+API：http://45.32.65.132/api
+健康检查：http://45.32.65.132/api/health
+
+管理员登录：
+Email: admin@videoflow.pro
+Password: admin123
+
+⚠️ 首次登录后请立即修改密码！
+
+
+=========================================================
+常见问题
+=========================================================
+
+Q: Secrets在哪里找？
+A: Settings → Secrets and variables → Actions
+
+Q: 如何查看部署是否成功？
+A: Actions页面，看到绿色✅表示成功
+
+Q: 部署需要多长时间？
+A: 首次部署5-10分钟，后续更新2-3分钟
+
+Q: 如何重新部署？
+A: Actions页面 → Run workflow → Run workflow按钮
+
+Q: 部署失败怎么办？
+A: 查看详细指南：deploy/GitHub-Actions-配置指南.md
+
+
+=========================================================
+后续使用
+=========================================================
+
+每次修改代码后，只需：
+
+git add .
+git commit -m "你的提交信息"
+git push origin main
+
+GitHub Actions会自动部署，无需手动操作！
+
+
+=========================================================

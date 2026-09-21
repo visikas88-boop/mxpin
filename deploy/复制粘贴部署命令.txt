@@ -1,0 +1,166 @@
+==========================================================
+VideoFlow Pro 一键部署命令（复制粘贴到SSH终端）
+==========================================================
+
+第一步：SSH登录到Vultr服务器
+------------------------------
+在Windows PowerShell或Git Bash中执行：
+
+ssh root@45.32.65.132
+
+（输入密码后回车）
+
+
+第二步：复制以下全部命令，粘贴到SSH终端并回车
+------------------------------
+
+#!/bin/bash
+set -e
+
+echo "========================================="
+echo "VideoFlow Pro 完整部署开始"
+echo "========================================="
+
+# 1. 更新系统
+echo ">>> [1/12] 更新系统..."
+apt-get update -qq
+apt-get install -y git curl wget
+
+# 2. 创建部署目录
+echo ">>> [2/12] 准备部署目录..."
+mkdir -p /var/www/videoflow-pro
+cd /var/www/videoflow-pro
+
+# 3. 克隆或更新代码
+if [ -d ".git" ]; then
+    echo ">>> [3/12] 更新代码..."
+    git fetch origin
+    git reset --hard origin/main
+else
+    echo ">>> [3/12] 克隆代码仓库..."
+    git clone https://github.com/visikas88-boop/mxpin.git .
+fi
+
+echo "当前版本: $(git log -1 --oneline)"
+
+# 4. 检查并执行部署脚本
+if [ ! -f "deploy/quick-deploy.sh" ]; then
+    echo "❌ 错误: 部署脚本不存在"
+    exit 1
+fi
+
+echo ">>> [4/12] 执行完整部署..."
+chmod +x deploy/quick-deploy.sh
+bash deploy/quick-deploy.sh
+
+echo ""
+echo "========================================="
+echo "✅ 部署完成！"
+echo "========================================="
+echo ""
+echo "访问地址: http://45.32.65.132"
+echo "管理员: admin@videoflow.pro / admin123"
+echo ""
+echo "查看服务状态: pm2 status"
+echo "查看后端日志: pm2 logs videoflow-backend"
+echo ""
+
+
+==========================================================
+部署完成后的验证
+==========================================================
+
+1. 查看服务状态：
+   pm2 status
+
+2. 检查后端健康：
+   curl http://localhost:3000/api/health
+
+3. 检查Nginx状态：
+   systemctl status nginx
+
+4. 查看后端日志：
+   pm2 logs videoflow-backend --lines 20
+
+
+==========================================================
+访问应用
+==========================================================
+
+前端地址: http://45.32.65.132
+API地址: http://45.32.65.132/api
+健康检查: http://45.32.65.132/api/health
+
+管理员账号:
+  Email: admin@videoflow.pro
+  Password: admin123
+
+⚠️ 重要：首次登录后请立即修改密码！
+
+
+==========================================================
+常用管理命令
+==========================================================
+
+# 查看服务状态
+pm2 status
+
+# 查看后端日志
+pm2 logs videoflow-backend
+
+# 重启后端服务
+pm2 restart videoflow-backend
+
+# 查看Nginx错误日志
+tail -f /var/log/nginx/error.log
+
+# 重启Nginx
+systemctl restart nginx
+
+# 查看系统资源
+free -h
+df -h
+top
+
+
+==========================================================
+更新代码（后续使用）
+==========================================================
+
+cd /var/www/videoflow-pro
+git pull origin main
+pm2 restart videoflow-backend
+
+
+==========================================================
+故障排查
+==========================================================
+
+如果部署失败，请检查：
+
+1. 查看详细错误日志：
+   pm2 logs videoflow-backend --lines 50
+
+2. 检查数据库连接：
+   sudo -u postgres psql -l | grep videoflow_pro
+
+3. 检查Nginx配置：
+   nginx -t
+
+4. 查看系统日志：
+   journalctl -xe
+
+5. 重新执行部署脚本：
+   cd /var/www/videoflow-pro
+   bash deploy/quick-deploy.sh
+
+
+==========================================================
+需要帮助？
+==========================================================
+
+如果遇到问题，请提供以下信息：
+- pm2 status 的输出
+- pm2 logs videoflow-backend 的最后50行
+- nginx -t 的输出
+- 系统信息: uname -a
