@@ -1,0 +1,208 @@
+=================================================================
+VideoFlow Pro 手动SSH部署指南
+=================================================================
+
+由于GitHub Actions部署失败，请按以下步骤手动SSH部署：
+
+=================================================================
+方式一：一键部署（推荐）
+=================================================================
+
+1. 打开PowerShell或Git Bash
+2. 执行以下命令：
+
+ssh root@45.32.65.132
+
+3. 输入服务器密码后，执行以下一键命令：
+
+bash <(curl -s https://raw.githubusercontent.com/visikas88-boop/mxpin/main/deploy/quick-deploy.sh)
+
+
+=================================================================
+方式二：分步手动部署
+=================================================================
+
+如果方式一失败，按以下步骤逐步操作：
+
+### 步骤1：SSH登录服务器
+ssh root@45.32.65.132
+# 输入密码
+
+### 步骤2：更新系统并安装Git
+apt-get update
+apt-get install -y git curl wget
+
+### 步骤3：克隆代码
+mkdir -p /var/www/videoflow-pro
+cd /var/www/videoflow-pro
+git clone https://github.com/visikas88-boop/mxpin.git .
+
+### 步骤4：执行部署脚本
+chmod +x deploy/quick-deploy.sh
+bash deploy/quick-deploy.sh
+
+
+=================================================================
+方式三：使用本地脚本
+=================================================================
+
+如果GitHub无法访问，使用本地脚本：
+
+### 步骤1：在本地创建脚本
+在本地创建文件：C:\deploy-script.sh
+
+复制以下内容到文件：
+（见下方完整脚本）
+
+### 步骤2：上传并执行
+# 上传脚本到服务器
+scp C:\deploy-script.sh root@45.32.65.132:/root/
+
+# SSH登录
+ssh root@45.32.65.132
+
+# 执行脚本
+chmod +x /root/deploy-script.sh
+bash /root/deploy-script.sh
+
+
+=================================================================
+完整部署脚本（方式三使用）
+=================================================================
+
+#!/bin/bash
+set -e
+
+echo "开始部署 VideoFlow Pro..."
+
+# 1. 更新系统
+apt-get update -qq
+apt-get install -y git curl wget
+
+# 2. 安装Node.js 18
+if ! command -v node &> /dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
+fi
+
+# 3. 安装PostgreSQL
+if ! command -v psql &> /dev/null; then
+    apt-get install -y postgresql postgresql-contrib
+    systemctl start postgresql
+fi
+
+# 4. 配置数据库
+sudo -u postgres psql << 'DBEOF'
+CREATE DATABASE videoflow_pro;
+CREATE USER videoflow_user WITH PASSWORD 'VfP@2024Secure!';
+GRANT ALL PRIVILEGES ON DATABASE videoflow_pro TO videoflow_user;
+ALTER DATABASE videoflow_pro OWNER TO videoflow_user;
+DBEOF
+
+# 5. 克隆代码
+mkdir -p /var/www/videoflow-pro
+cd /var/www/videoflow-pro
+git clone https://github.com/visikas88-boop/mxpin.git . || git pull
+
+# 6. 配置后端
+cd /var/www/videoflow-pro/server
+cat > .env << 'EOF'
+NODE_ENV=production
+PORT=3000
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=videoflow_pro
+DB_USER=videoflow_user
+DB_PASSWORD=VfP@2024Secure!
+JWT_SECRET=vfp_jwt_secret_key_2024
+CORS_ORIGIN=http://45.32.65.132
+EOF
+
+npm install --production
+
+# 7. 启动后端
+npm install -g pm2
+pm2 delete videoflow-backend 2>/dev/null || true
+pm2 start src/index.js --name videoflow-backend
+pm2 save
+
+# 8. 构建前端
+cd /var/www/videoflow-pro/web
+npm install
+npm run build
+
+# 9. 配置Nginx
+apt-get install -y nginx
+
+cat > /etc/nginx/sites-available/videoflow << 'NGINXEOF'
+server {
+    listen 80;
+    server_name 45.32.65.132;
+
+    location / {
+        root /var/www/videoflow-pro/web/dist;
+        try_files $uri /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+    }
+}
+NGINXEOF
+
+ln -sf /etc/nginx/sites-available/videoflow /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+systemctl restart nginx
+
+echo "部署完成！访问: http://45.32.65.132"
+
+
+=================================================================
+验证部署
+=================================================================
+
+部署完成后，执行以下命令验证：
+
+# 检查服务状态
+pm2 status
+
+# 检查后端日志
+pm2 logs videoflow-backend --lines 20
+
+# 检查Nginx
+systemctl status nginx
+
+# 测试后端API
+curl http://localhost:3000/api/health
+
+
+=================================================================
+常见问题
+=================================================================
+
+Q1: 数据库创建失败
+A: 数据库可能已存在，忽略错误继续
+
+Q2: npm install 失败
+A: 执行 npm cache clean --force 后重试
+
+Q3: 前端构建失败
+A: 检查Node.js版本 node -v，应该是v18.x
+
+Q4: Nginx无法启动
+A: 执行 nginx -t 查看配置错误
+
+
+=================================================================
+部署完成后访问
+=================================================================
+
+前端：http://45.32.65.132
+API：http://45.32.65.132/api
+
+管理员账号：
+Email: admin@videoflow.pro
+Password: admin123
+
+=================================================================

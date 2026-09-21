@@ -1,0 +1,68 @@
+#!/usr/bin/expect -f
+
+# VideoFlow Pro 自动部署脚本（使用密码认证）
+# 用途：从本机直接SSH到服务器并执行更新
+
+set timeout 300
+set password "Vultr2026@"
+set server "45.32.65.122"
+set user "root"
+
+puts "🚀 开始连接服务器并执行更新..."
+puts ""
+
+spawn ssh -o StrictHostKeyChecking=no $user@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "# " {
+        puts "✅ SSH连接成功！"
+        puts ""
+
+        puts "📂 进入项目目录..."
+        send "cd /var/www/videoflow-pro\r"
+        expect "# "
+
+        puts "🔄 拉取最新代码..."
+        send "git pull origin main\r"
+        expect "# "
+
+        puts "📦 安装后端依赖..."
+        send "cd server && npm install --production\r"
+        expect "# "
+
+        puts "🏗️ 构建前端..."
+        send "cd ../web && npm install --legacy-peer-deps && npm run build\r"
+        expect "# "
+
+        puts "🔄 重启后端服务..."
+        send "pm2 restart videoflow-backend\r"
+        expect "# "
+
+        puts "🔄 重新加载 Nginx..."
+        send "systemctl reload nginx\r"
+        expect "# "
+
+        puts ""
+        puts "✅ 部署完成！检查服务状态..."
+        send "pm2 status\r"
+        expect "# "
+
+        send "exit\r"
+    }
+    timeout {
+        puts "❌ 连接超时"
+        exit 1
+    }
+    eof {
+        puts "❌ 连接失败"
+        exit 1
+    }
+}
+
+puts ""
+puts "🎉 部署完成！"
+puts "🌐 访问地址: http://$server"
