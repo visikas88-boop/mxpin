@@ -37,8 +37,16 @@ function aiApiUrl(config: AiConfig, path: string) {
 }
 
 function aiHeaders(config: AiConfig, contentType?: string) {
+    // 优先使用用户登录token，按照登录时存储的键名顺序检查
+    const userToken = localStorage.getItem('auth_token')
+        || localStorage.getItem('user_token')
+        || localStorage.getItem('token')
+        || localStorage.getItem('admin_token');
+
+    const authToken = userToken || config.apiKey;
+
     return {
-        Authorization: `Bearer ${config.apiKey}`,
+        Authorization: `Bearer ${authToken}`,
         ...(contentType ? { "Content-Type": contentType } : {}),
     };
 }
@@ -48,12 +56,12 @@ export async function requestVideoGeneration(config: AiConfig, prompt: string, r
 }
 
 export async function waitForVideoGenerationTask(config: AiConfig, task: VideoGenerationTask, options?: RequestOptions): Promise<VideoGenerationResult> {
-    for (let attempt = 0; attempt < 120; attempt += 1) {
+    for (let attempt = 0; attempt < 360; attempt += 1) {
         if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
         const state = await pollVideoGenerationTask(config, task, options);
         if (state.status === "completed") return state.result;
         if (state.status === "failed") throw videoTaskFailed(state.error);
-        if (attempt === 119) throw new Error(apiText("videoTimeout", { provider: "" }));
+        if (attempt === 359) throw new Error(apiText("videoTimeout", { provider: "" }));
         await delay(2500, options?.signal);
     }
     throw new Error(apiText("videoTimeout", { provider: "" }));

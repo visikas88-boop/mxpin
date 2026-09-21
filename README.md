@@ -1,179 +1,416 @@
-<p align="center">
-  <img src="web/public/logo.svg" width="96" alt="infinite-canvas logo">
-</p>
+# VideoFlow Pro - 项目总览
 
-<h1 align="center">无限画布 (infinite-canvas)</h1>
+## 🎯 项目简介
 
-<p align="center">
-  <a href="https://linux.do/"><img src="https://img.shields.io/badge/Linux.do-Community-2b6de8?style=flat-square" alt="Linux.do"></a>
-  <a href="https://render.com/deploy?repo=https://github.com/basketikun/infinite-canvas"><img src="https://img.shields.io/badge/Render-Deploy-46e3b7?style=flat-square&logo=render&logoColor=111111" alt="Deploy to Render"></a>
-  <a href="https://github.com/basketikun/infinite-canvas"><img src="https://img.shields.io/github/stars/basketikun/infinite-canvas?style=flat-square&logo=github" alt="GitHub stars"></a>
-  <a href="https://github.com/basketikun/infinite-canvas/tags"><img src="https://img.shields.io/github/v/tag/basketikun/infinite-canvas?style=flat-square&label=version" alt="Version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-f97316?style=flat-square" alt="License"></a>
-  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-7-646cff?style=flat-square&logo=vite&logoColor=white" alt="Vite"></a>
-  <a href="https://reactrouter.com/"><img src="https://img.shields.io/badge/React_Router-7-ca4245?style=flat-square&logo=reactrouter&logoColor=white" alt="React Router"></a>
-</p>
+VideoFlow Pro 是一个基于 AI 的视频/图片生成与多平台自动发布管理系统。
 
-<p align="center">
-<a href="https://trendshift.io/repositories/50077?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-50077" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/50077" alt="basketikun%2Finfinite-canvas | Trendshift" width="250" height="55"/></a>
-</p>
+**核心功能：**
+- AI 视频/图片生成（支持多种模型）
+- 多平台内容发布（Facebook、Instagram、TikTok、YouTube、Pinterest）
+- 积分计费系统
+- 用户权限管理
+- 生成任务管理
 
-<p align="center">
-  <a href="docs/content/docs/overview/quick-start.mdx">快速开始</a> · <a href="docs/content/docs/overview/features.mdx">功能介绍</a> · <a href="docs/content/docs/overview/render.mdx">Render 部署</a> · <a href="docs/content/docs/overview/docker.mdx">Docker 部署</a> · <a href="docs/content/docs/canvas/canvas-node-manual.mdx">画布节点操作手册</a> · <a href="docs/content/docs/canvas/canvas-shortcuts.mdx">画布快捷键</a> · <a href="SECURITY.md">漏洞提交</a> · <a href="docs/content/docs/progress/todo.mdx">待办事项</a> · <a href="canvas-agent/README.md">本地 Canvas Agent</a> · <a href="plugins/infinite-canvas">Codex app 插件</a>
-</p>
+---
 
-无限画布是一款面向图片创作的开源工作台。它把画布编排、AI 图片生成、参考图编辑、对话助手、提示词库和素材沉淀放在同一个界面里，适合用来探索视觉方案并连续迭代图片结果。
+## 📁 项目结构
 
-> [!CAUTION]
-> 项目目前处于开发阶段，不保证历史数据兼容。各种本地存储格式都可能直接调整，欢迎关注后续更新。
->
-> 如果你需要稳定维护自己的分支，建议自行 fork 后独立开发。二次开发与 PR 请保留原作者信息和前端页面标识。
-
-## 赞助商
-
-<table>
-  <tr>
-    <td width="190" align="center">
-      <a href="https://www.atlascloud.ai/zh?utm_source=github&utm_medium=link&utm_campaign=infinite-canvas" target="_blank" rel="noopener noreferrer"><img src="assets/atlascloud.svg" width="163" alt="Atlas Cloud"></a>
-    </td>
-    <td>
-      <a href="https://www.atlascloud.ai/zh?utm_source=github&utm_medium=link&utm_campaign=infinite-canvas" target="_blank" rel="noopener noreferrer">Atlas Cloud</a> is a full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Instead of managing multiple vendor integrations, you connect once and get unified access to 300+ curated models across all modalities. Check out <a href="https://www.atlascloud.ai/console/coding-plan" target="_blank" rel="noopener noreferrer">Atlas Cloud's new coding plan promotion</a> for more budget-friendly API access.
-    </td>
-  </tr>
-  <tr>
-    <td width="190" align="center">
-      <a href="https://metaso.cn/minimax-h3/?s=inf" target="_blank" rel="noopener noreferrer"><img src="assets/metaso.jpg" width="163" alt="秘塔科技"></a>
-    </td>
-    <td>
-      <strong>MiniMax H3 视频生成 API｜秘塔科技</strong> 秘塔科技提供高性价比的 MiniMax H3 视频生成服务：<strong>768P 仅 0.09 元/秒，2K 仅 0.15 元/秒</strong>。支持原生 2K、音画同步，API 兼容 <strong>OpenAI 协议</strong>，同时支持 <strong>ComfyUI</strong>，无需自行部署 GPU。 🎁 通过 <a href="https://metaso.cn/minimax-h3/?s=inf" target="_blank" rel="noopener noreferrer">无限画布专属链接注册</a>，即可领取赠送额度及专属优惠。
-    </td>
-  </tr>
-  <tr>
-    <td width="190" align="center">
-      <a href="https://www.infistar.cc/register?aff=4X3V9NA9&ref_source=link" target="_blank" rel="noopener noreferrer"><img src="assets/infistar.png" width="163" alt="Infistar.ai 无限星河"></a>
-    </td>
-    <td>
-      <strong>无限画布 × Infistar.ai 无限星河｜内置原生画布 · 全能多模态 API</strong> 💡 原生集成，即点即用： Infistar.ai 已原生上架无限画布！同时提供低至官方 1 折的稳定 API 中转服务，模型倍率与调用明细全程透明。 🎨 多模态生图/生视频： 完美适配 Seedance、FLUX、Midjourney、Sora、Runway、Luma、可灵（Kling）等顶级图片与视频大模型。 🧠 全系语言模型： 覆盖 OpenAI、Claude、Gemini、Grok、DeepSeek、Qwen、GLM 等国内外主流模型，兼容 OpenAI 标准接口。 ⚡ 动态调度： 多路供应保障高可用，拒绝断连。 🎁 专属福利： 通过 <a href="https://infistar.ai/register?aff=4X3V9NA9&ref_source=link" target="_blank" rel="noopener noreferrer">专属链接</a> 注册，立享赠送额度/专属折扣/首充权益！
-    </td>
-  </tr>
- <tr>
-    <td width="190" align="center">
-      <a href="https://heyroute.ai/basketikun" target="_blank" rel="noopener noreferrer"><img src="assets/heyroute.svg" width="163" alt="HeyRoute"></a>
-    </td>
-    <td>
-      <strong>无限画布 × HeyRoute｜全能多模态 API 服务商</strong>
-      💡&nbsp;HeyRoute 深度接入无限画布，将创意构思、图片生成、视频制作与内容开发融为一体，让每个灵感都能快速落地。
-      🎨&nbsp;多模态创作能力： 支持 AI 生图、生视频、图像编辑及内容生成，兼容 Seedance、MiniMax-H3、Image-2、Grok Video、Flux Klein、Gemini 等主流模型。
-      🧠&nbsp;丰富模型生态： 覆盖 OpenAI、Claude、Gemini、Grok、DeepSeek、Qwen、GLM 等语言模型，并兼容 OpenAI 标准接口。
-      ⚡&nbsp;稳定高效调用： 支持多模型、多线路灵活调度，调用记录清晰透明，满足日常创作、应用开发与批量生产需求。
-      🎁&nbsp;专属福利： 通过 <a href="https://heyroute.ai/basketikun">专属链接</a> 注册，即可领取新用户 15 美元试用额度！
-    </td>
-  </tr>
-  <tr>
-    <td width="190" align="center">
-      <a href="https://www.packyapi.com/register?aff=34VV" target="_blank" rel="noopener noreferrer"><img src="assets/packycode.png" width="163" alt="PackyCode"></a>
-    </td>
-    <td>
-      <strong>无限画布 × PackyCode｜稳定高效的 API 中转服务商</strong>
-      💡&nbsp;PackyCode 是一家稳定、高效的 API 中转服务商，提供 Claude Code、Codex、Gemini 等多种中转服务，让 AI 编程成为真正的生产力工具。
-      ⚡&nbsp;稳定高效： 具备自动故障转移、智能路由和无限并发等多种功能，保障调用稳定可靠。
-      🎁&nbsp;专属福利： 通过 <a href="https://www.packyapi.com/register?aff=34VV" target="_blank" rel="noopener noreferrer">专属链接</a> 注册，立即开始使用！
-    </td>
-  </tr>
-</table>
-
-## 核心功能
-
-- 无限画布：多画布项目、节点拖拽缩放、连线、小地图、撤销重做、导入导出。
-- AI 创作：浏览器前台直连你配置的 OpenAI 兼容接口，支持文生图、图生图、参考图编辑、文本问答、音频和视频生成。
-- 画布助手：围绕选中节点和上游节点对话、生图，并把结果插回画布。
-- 本地 Agent：通过本机 Canvas Agent 连接 Codex / Claude Code，让 Agent 通过 MCP 操作当前画布；
-- Codex App 插件：提供 Codex app 插件，安装后会自动注册 MCP 并尝试拉起本地 Agent。
-- 插件系统：支持通过 URL 动态安装 / 启用 / 更新 / 卸载远程节点插件，并提供 TypeScript SDK 自行开发画布节点插件。
-- 自定义接口调用：可自定义生图 / 视频接口的调用方式，灵活适配各类中转站与自建服务。
-- 提示词库：内置 7 个开源提示词来源并支持自定义标准 JSON 来源，由浏览器前端直连并缓存到 IndexedDB。
-
-完整功能说明见 [功能介绍](docs/content/docs/overview/features.mdx)。
-
-如果你在为担心没有合适的生图API来发愁，可以查看该免费生图项目：[chatgpt2api](https://github.com/basketikun/chatgpt2api)
-
-## 快速开始
-
-AI API Key、Base URL、画布、素材和生成记录默认保存在浏览器本地。
-
-### 本地开发
-
-```bash
-git clone git@github.com:basketikun/infinite-canvas.git
-cd infinite-canvas
-cd web
-bun install
-bun run dev
+```
+F:/Aipost/
+├── server/                    # 后端（Node.js + Express）
+│   ├── src/
+│   │   ├── config/           # 配置文件
+│   │   ├── controllers/      # 控制器
+│   │   ├── middleware/       # 中间件
+│   │   ├── routes/           # 路由
+│   │   ├── utils/            # 工具函数
+│   │   ├── database/         # 数据库迁移
+│   │   └── index.js          # 入口文件
+│   ├── .env                  # 环境变量
+│   └── package.json
+│
+├── web/                       # 前端（React + TypeScript）
+│   ├── src/
+│   │   ├── components/       # 组件
+│   │   ├── pages/            # 页面
+│   │   ├── stores/           # 状态管理
+│   │   └── services/         # API服务
+│   └── package.json
+│
+├── admin/                     # 管理后台
+│
+├── docs/                      # 用户文档站点（NextJS项目）
+│
+├── project-docs/              # 📚 项目管理文档
+│   ├── design/               # 设计文档
+│   ├── testing/              # 测试文档
+│   ├── api/                  # API配置文档
+│   ├── installation/         # 安装指南
+│   ├── development/          # 开发文档
+│   ├── deployment/           # 部署指南
+│   ├── reports/              # 开发报告
+│   ├── README.md             # 文档管理规范
+│   └── INDEX.md              # 文档索引
+│
+├── README.md                  # 本文件
+├── CHANGELOG.md              # 版本日志
+├── SECURITY.md               # 安全策略
+└── AGENTS.md                 # AI Agent配置
 ```
 
-### Docker 运行
+> 📖 **查看所有文档**: [project-docs/INDEX.md](project-docs/INDEX.md)  
+> 📋 **文档管理规范**: [project-docs/README.md](project-docs/README.md)
+
+---
+
+## 🛠️ 技术栈
+
+### 后端
+- **框架**: Node.js + Express
+- **数据库**: PostgreSQL 18.6
+- **认证**: JWT + bcrypt
+- **加密**: AES-256-CBC
+- **HTTP 客户端**: Axios
+
+### 前端
+- **框架**: Next.js 15 (App Router)
+- **语言**: TypeScript
+- **样式**: Tailwind CSS
+- **状态**: Zustand
+- **图标**: Lucide React
+- **提示**: React Hot Toast
+
+---
+
+## 📊 数据库设计
+
+### 核心表结构（9张表）
+
+1. **users** - 用户表
+   - 基础信息、角色、积分余额
+
+2. **ai_models** - AI 模型配置
+   - 灵活配置、加密 API Key
+
+3. **generation_tasks** - 生成任务
+   - 状态追踪、积分消费
+
+4. **generated_contents** - 生成内容
+   - 文件 URL、元数据
+
+5. **upload_post_config** - 发布平台配置
+   - 平台 Token 管理
+
+6. **publish_tasks** - 发布任务
+   - 多平台发布记录
+
+7. **points_transactions** - 积分交易
+   - 充值/消费/退款
+
+8. **recharge_orders** - 充值订单
+   - 支付记录
+
+9. **admin_logs** - 管理员日志
+   - 操作审计
+
+---
+
+## 🔌 API 接口
+
+### 认证模块 (5个)
+- POST `/api/auth/register` - 注册
+- POST `/api/auth/login` - 登录
+- GET `/api/auth/me` - 获取当前用户
+- PUT `/api/auth/profile` - 更新资料
+- PUT `/api/auth/password` - 修改密码
+
+### 模型管理 (6个)
+- GET `/api/models` - 获取模型列表
+- GET `/api/models/:id` - 获取模型详情
+- POST `/api/models` - 创建模型 (admin)
+- PUT `/api/models/:id` - 更新模型 (admin)
+- DELETE `/api/models/:id` - 删除模型 (admin)
+- POST `/api/models/:id/test` - 测试模型 (admin)
+
+### 生成任务 (4个)
+- POST `/api/generation/create` - 创建任务
+- GET `/api/generation/tasks/:id` - 查询任务状态
+- GET `/api/generation/tasks` - 获取任务列表
+- POST `/api/generation/tasks/:id/cancel` - 取消任务
+
+### 积分系统 (5个)
+- GET `/api/points/balance` - 获取余额
+- GET `/api/points/transactions` - 交易记录
+- GET `/api/points/orders` - 充值订单
+- GET `/api/points/stats` - 积分统计
+- POST `/api/points/recharge` - 手动充值 (admin)
+
+**总计：20 个 API 接口**
+
+---
+
+## 🚀 快速开始
+
+### 1. 环境准备
+
+**必需软件：**
+- Node.js >= 18
+- PostgreSQL 18.6
+- npm >= 9
+
+### 2. 后端启动
 
 ```bash
-git clone git@github.com:basketikun/infinite-canvas.git
-cd infinite-canvas
-docker compose up -d
+# 进入后端目录
+cd F:\Aipost\server
+
+# 安装依赖
+npm install
+
+# 数据库迁移
+npm run db:migrate
+
+# 启动开发服务器
+npm run dev
 ```
 
-运行后默认端口3000，可访问 `http://localhost:3000`。
+后端运行在: http://localhost:3001
 
-首次打开后进入右上角配置，填入自己的 OpenAI 兼容 `Base URL` 和 `API Key`。
+### 3. 前端启动
 
-如果默认的OpenAI接口调用方式与您的API不同，可自定义生图/视频脚本调用。
+```bash
+# 进入前端目录
+cd F:\Aipost\frontend
 
-## 效果展示
+# 安装依赖
+npm install
 
-<table width="100%">
-  <tr>
-    <td width="50%"><img src="https://i.ibb.co/TDFvGWDT/image.png" alt="image" border="0"></td>
-    <td width="50%"><img src="https://i.ibb.co/zVwJq3YS/image.png" alt="image" border="0"></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="https://i.ibb.co/PvY3qhhK/image.png" alt="image" border="0"></td>
-    <td width="50%"><img src="https://i.ibb.co/7D04LwN/image.png" alt="image" border="0"></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="https://i.ibb.co/bj30FtS5/5.png" alt="5" border="0"></td>
-    <td width="50%"><img src="https://i.ibb.co/hxRvjw51/image.png" alt="image" border="0"></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="https://i.ibb.co/jkWsF8q1/image.png" alt="image" border="0"></td>
-    <td width="50%"><img src="https://i.ibb.co/XrnfXHx7/image.png" alt="image" border="0"></td>
-  </tr>
-</table>
+# 启动开发服务器
+npm run dev
+```
 
-## 联系方式
+前端运行在: http://localhost:3000
 
-项目定制二次开发需求 / 生图 API 需求可联系。
+### 4. 一键启动
 
-邮箱：1844025705@qq.com · QQ：1844025705
+双击运行 `启动服务.bat`
 
-## 赞助支持
+---
 
-本项目长期开放广告赞助合作，欢迎品牌 / 产品投放，你的支持是持续更新的动力！
+## 🔑 测试账号
 
-有广告赞助意向请通过上方联系方式沟通。
+### 管理员
+- 用户名: `admin`
+- 密码: `admin123`
+- 积分: 999999
 
-## 社区支持
+### 测试用户
+- 用户名: `testuser`
+- 密码: `test123456`
+- 积分: 3000
 
-学 AI，上 L 站：[LinuxDO](https://linux.do/)
+---
 
-点击链接加入群聊【开源无限画布(2群)】：https://qm.qq.com/q/HRt2kUnYiG
+## 📋 开发进度
 
-## 开源协议
+### Day 1 - 环境搭建 ✅
+- PostgreSQL 安装配置
+- 数据库设计
+- 项目初始化
 
-本项目使用 [MIT License](LICENSE)。任何人都可以免费使用、复制、修改、分发、再授权和商业使用本项目，也可以用于闭源产品。
+### Day 2 - 后端核心 ✅
+- 用户认证系统
+- 模型管理 CRUD
+- JWT + bcrypt 安全
 
-## Star History
+### Day 3 - 生成与积分 ✅
+- AI 生成任务系统
+- 积分计费系统
+- 失败自动退款
 
-<a href="https://www.star-history.com/?repos=basketikun%2Finfinite-canvas&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=basketikun/infinite-canvas&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=basketikun/infinite-canvas&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=basketikun/infinite-canvas&type=date&legend=top-left" />
- </picture>
-</a>
+### Day 3 下午 - 前端开发 ✅
+- 登录页面
+- 后台布局（左侧导航）
+- 工作台
+- AI 生成页面
+- 积分中心
+
+### Day 4 - 待完成 ⏳
+- [ ] Upload-Post API 集成
+- [ ] 多平台发布功能
+- [ ] 内容管理页面
+- [ ] 系统设置页面
+
+---
+
+## 🎨 功能特性
+
+### 已完成 ✅
+
+**用户系统**
+- 注册/登录
+- JWT 认证
+- 角色权限（user/admin）
+- 资料管理
+
+**模型管理**
+- 灵活配置（不硬编码）
+- API Key 加密存储
+- 支持视频/图片模型
+- 6 个预置模型
+
+**生成系统**
+- 创建生成任务
+- 异步 AI 调用
+- 状态追踪
+- 失败自动退款
+
+**积分系统**
+- 充值/消费/退款
+- 完整交易记录
+- 余额检查
+- 统计分析
+
+**前端界面**
+- 响应式设计
+- 左侧导航布局
+- 工作台数据展示
+- AI 生成创建
+- 积分中心管理
+
+### 待完成 ⏳
+
+**内容管理**
+- 内容列表
+- 内容详情
+- 编辑/删除
+
+**发布管理**
+- Upload-Post 集成
+- 多平台发布
+- 发布状态追踪
+
+**系统设置**
+- 个人设置
+- 平台配置
+- 模型管理（admin）
+
+---
+
+## 🔒 安全特性
+
+1. **密码安全**
+   - bcrypt 加密（10 rounds）
+   - 强度验证
+
+2. **API Key 保护**
+   - AES-256-CBC 加密
+   - 数据库加密存储
+
+3. **JWT 认证**
+   - 7 天有效期
+   - 自动刷新机制
+
+4. **权限控制**
+   - 角色分离（user/admin）
+   - 接口权限验证
+
+5. **数据验证**
+   - 输入验证
+   - SQL 注入防护
+   - XSS 防护
+
+---
+
+## 📈 性能优化
+
+1. **数据库**
+   - 索引优化
+   - 连接池管理
+   - 查询优化
+
+2. **前端**
+   - 代码分割
+   - 懒加载
+   - 图片优化
+
+3. **API**
+   - 响应缓存
+   - 请求合并
+   - 超时控制
+
+---
+
+## 🐛 已知问题
+
+1. ⚠️ 预置模型 API Key 为占位符（需更新）
+2. ⚠️ 暂不支持实际 AI 调用（等待真实 API Key）
+3. ⚠️ 前端分页功能待完善
+4. ⚠️ 移动端体验待优化
+
+---
+
+## 📝 部署指南
+
+### 开发环境
+- Windows 本地开发
+- PostgreSQL 本地数据库
+- Node.js 开发服务器
+
+### 生产环境（计划）
+- DigitalOcean 服务器（4G2C80G）
+- Linux 系统
+- PM2 进程管理
+- Nginx 反向代理
+
+---
+
+## 🤝 贡献指南
+
+1. Fork 项目
+2. 创建功能分支
+3. 提交更改
+4. 推送到分支
+5. 创建 Pull Request
+
+---
+
+## 📄 License
+
+Private - All Rights Reserved
+
+---
+
+## 📞 联系方式
+
+项目开发中，如有问题请查看文档：
+
+**核心文档**
+- 📚 [项目文档索引](project-docs/INDEX.md) - 快速查找所有文档
+- 📋 [文档管理规范](project-docs/README.md) - 文档组织规则
+
+**快速开始**
+- 🚀 [快速启动指南](project-docs/deployment/快速启动指南.md)
+- 📦 [开发环境搭建](project-docs/installation/开发环境搭建指南.md)
+- 🔑 [后台访问指南](project-docs/deployment/后台管理系统访问指南.md)
+
+**开发参考**
+- 🗄️ [数据库设计](project-docs/design/DOC-002-数据库设计与迁移脚本.md)
+- 🧪 [API测试文档](project-docs/testing/API-测试文档.md)
+- 👥 [用户管理功能](project-docs/development/README-用户管理与积分管理.md)
+
+**问题排查**
+- 🔧 [快速修复指南](project-docs/testing/快速修复指南.md)
+- ✅ [模型配置验证](project-docs/testing/模型配置修复-验证指南.md)
+
+---
+
+## 🎉 致谢
+
+感谢以下技术和工具：
+- Node.js / Express
+- PostgreSQL
+- Next.js / React
+- Tailwind CSS
+- Vercel
+- DigitalOcean

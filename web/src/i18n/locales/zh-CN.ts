@@ -1,11 +1,12 @@
 export default {
     meta: {
-        title: "无限画布",
+        title: "Mxpin",
         description: "一个无限画布创作工具",
     },
     theme: { toggle: "切换主题" },
     common: {
         cancel: "取消",
+        confirm: "确定",
         save: "保存",
         edit: "编辑",
         done: "完成",
@@ -27,6 +28,10 @@ export default {
         durationMinutes: "{{minutes}}分{{seconds}}秒",
         durationSeconds: "{{seconds}}秒",
         imageReadFailed: "读取图片失败",
+        pleaseLogin: "请先登录",
+        goToLogin: "前往登录",
+        total: "共",
+        actions: "操作",
     },
     settingsPanels: {
         common: { auto: "自动", low: "低", medium: "中", high: "高", xhigh: "极高" },
@@ -185,7 +190,8 @@ export default {
         addReference: "加入参考图",
     },
     videoWorkbench: {
-        title: "视频创作台",
+        title: "AI视频生成助手",
+        subtitle: "一键生成海外电商营销短视频",
         promptPlaceholder: "描述镜头运动、主体动作、场景氛围和画面风格",
         references: "参考图",
         videoReferences: "参考视频",
@@ -213,6 +219,13 @@ export default {
         resultTitle: "生成视频",
         source: "视频创作台",
         empty: "还没有生成视频",
+        promptLibrary: "提示词库",
+        myAssets: "我的资产",
+        expand: "展开",
+        collapse: "收起",
+        generationRecord: "生成记录",
+        generationResult: "生成结果",
+        historyRecord: "历史记录",
     },
     canvas: {
         defaultTitle: "无限画布 {{count}}",
@@ -650,8 +663,128 @@ export default {
             submittingApproval: "正在提交权限决定", waitingCodexApproval: "等待 Codex 确认权限", approvalFailed: "权限审批失败", enableFullAccess: "启用完全访问权限", fullAccessDescription: "Codex 将不受沙箱限制，可访问互联网及本机任意文件。请仅在信任当前任务时使用。", enableFullAccessAction: "启用完全访问", offline: "离线", addressRequired: "请填写本地 Agent 地址", agentNotFound: "没有发现本地 Agent，请先在 Codex 使用插件或手动启动 Canvas Agent", invalidAddress: "本地 Agent 地址格式不正确", connecting: "连接中", creatingConversation: "正在新建对话", newConversation: "新对话", newConversationFailed: "新建对话失败", conversationResumed: "已恢复会话", resumeConversationFailed: "恢复对话失败", recordsDeleted: "已删除 {{count}} 条记录", deleteConversationFailed: "删除对话失败", deleteConversations: "删除 {{count}} 条对话记录", deleteConversationsDescription: "删除后无法恢复，确定继续吗？", importGeneratedImages: "导入生成图片", addedToSourceCanvas: "已添加到发起任务的画布", imageGenerated: "图片已生成", noImageAttachments: "没有可添加的图片附件", invalidAttachmentNode: "图片附件节点参数无效", attachmentReadFailed: "读取图片附件失败", referenceImage: "参考图", generatedImageReadFailed: "读取 Codex 生成图片失败", generatedImageName: "生成图片 {{index}}",
         },
     },
+    userMenu: {
+        recharge: "积分充值",
+        admin: "后台管理",
+        logout: "退出登录",
+    },
     locale: {
         zhCN: "简体中文",
         enUS: "English",
+    },
+    publishing: {
+        // 社交账号管理
+        socialAccounts: "社交账号",
+        connectAccount: "连接账号",
+        accountManagement: "账号管理",
+        connectedAccounts: "已连接账号",
+        notConnected: "未连接",
+        connectAccountFirst: "请先连接该平台账号",
+        disconnectAccount: "断开连接",
+        disconnectConfirm: "确定断开该账号连接吗？",
+        accountDisconnected: "账号已断开连接",
+        refreshAccountInfo: "刷新账号信息",
+        accountRefreshed: "账号信息已更新",
+
+        // 平台连接弹窗
+        connectPlatform: "连接社交平台",
+        platformCount: "{{count}} 平台",
+        searchPlatform: "搜索平台名称...",
+        securityTip: "为确保账号安全，建议使用指纹浏览器（如AdsPower、候鸟浏览器）登录系统并完成OAuth授权。建议一个环境授权每个平台一个账号。",
+        supported: "已支持",
+        noResultsFound: "未找到匹配的平台",
+        authWindowOpened: "已打开授权页面，请完成授权",
+        getAuthUrlFailed: "获取授权链接失败",
+        connectFailed: "连接失败，请稍后重试",
+
+        // 账号管理页面
+        platform: "平台",
+        accountNumber: "账号信息",
+        status: "状态",
+        connected: "已连接",
+        inactive: "未激活",
+        connectionTime: "连接时间",
+        lastSync: "最后同步",
+        accounts: "个账号",
+        sync: "同步账号",
+        syncFailed: "同步失败",
+        noConnectedAccounts: "暂无连接的账号",
+        clickConnectToStart: "点击右上角「连接账号」按钮开始添加",
+        disconnectFailed: "断开连接失败",
+        loadAccountsFailed: "加载账号列表失败",
+        loginExpired: "登录已过期，请重新登录",
+        accountConnected: "账号连接成功",
+
+        // 平台选择
+        selectPlatforms: "选择发布平台",
+        selectPlatformRequired: "请选择至少一个平台",
+        loadPlatformsFailed: "加载平台列表失败",
+        noPlatformsAvailable: "暂无可用平台",
+        platformConnected: "已连接",
+        platformNotConnected: "未连接",
+
+        // 视频发布
+        publishToSocial: "发布到社交平台",
+        videoUrl: "视频URL",
+        videoUrlRequired: "请输入视频URL",
+        videoUrlInvalid: "请输入有效的URL",
+        videoTitle: "视频标题",
+        videoTitleRequired: "请输入视频标题",
+        videoTitlePlaceholder: "输入视频标题",
+        videoDescription: "视频描述",
+        videoDescriptionPlaceholder: "输入视频描述（可选）",
+        thumbnailUrl: "缩略图URL（可选）",
+        thumbnailUrlInvalid: "请输入有效的URL",
+
+        // 费用与积分
+        points: "积分",
+        currentBalance: "当前积分余额",
+        costForThisPublish: "本次发布消耗",
+        balanceAfter: "发布后余额",
+        insufficientBalance: "积分余额不足，请先充值",
+        insufficientBalanceDetails: "积分不足，还需充值",
+
+        // 平台限制
+        maxDuration: "最大时长",
+        maxSize: "最大大小",
+        minutes: "分钟",
+
+        // 发布任务
+        taskCreated: "发布任务创建成功，正在处理中...",
+        taskCreateFailed: "创建任务失败",
+        publishNow: "立即发布",
+        publishingTasks: "发布任务",
+        taskList: "任务列表",
+        taskDetail: "任务详情",
+        taskStatus: "任务状态",
+
+        // 任务状态
+        pending: "等待处理",
+        processing: "处理中",
+        completed: "已完成",
+        partialSuccess: "部分成功",
+        failed: "失败",
+        cancelled: "已取消",
+        scheduled: "定时发布",
+
+        // 操作
+        retryTask: "重试",
+        cancelTask: "取消",
+        viewDetails: "查看详情",
+
+        // 温馨提示
+        tips: "温馨提示",
+        tip1: "视频将异步发布到选定的平台，请稍后查看任务状态",
+        tip2: "发布成功后积分不可退还",
+        tip3: "请确保视频符合各平台的内容规范",
+        tip4: "部分平台可能需要较长时间处理",
+
+        // 发布日志
+        publishSuccess: "发布成功",
+        publishFailed: "发布失败",
+        publishLog: "发布日志",
+        platformResults: "平台发布结果",
+        postUrl: "帖子链接",
+        errorMessage: "错误信息",
     },
 };

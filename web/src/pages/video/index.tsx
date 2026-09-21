@@ -1,18 +1,20 @@
-import { ArrowLeft, ArrowRight, BookOpen, CheckSquare, ClipboardPaste, Download, FolderPlus, History, LoaderCircle, Plus, SlidersHorizontal, Sparkles, Trash2, Upload, VideoIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowRight as ArrowRightIcon, BookOpen, CheckSquare, ClipboardPaste, Download, FolderPlus, History, ImagePlus, LoaderCircle, Plus, SlidersHorizontal, Sparkles, Trash2, Upload, VideoIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore, type DragEvent } from "react";
-import { App, Button, Checkbox, Drawer, Empty, Input, Modal, Tag, Typography } from "antd";
+import { App, Button, Checkbox, Drawer, Empty, Input, Modal, Tabs, Tag, Typography, Progress } from "antd";
 import localforage from "localforage";
 import { nanoid } from "nanoid";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
 
 import { AssetPickerModal, type InsertAssetPayload } from "@/components/canvas/asset-picker-modal";
-import { ModelPicker } from "@/components/model-picker";
 import { PromptSelectDialog } from "@/components/prompts/prompt-select-dialog";
+import { ModelSettingsModal } from "@/components/video/ModelSettingsModal";
 import { VideoSettingsPanel, normalizeVideoResolutionValue, normalizeVideoSizeValue, videoModeLabel, videoSizeLabel } from "@/components/video-settings-panel";
+import { PublishingModal } from "@/components/publishing/PublishingModal";
 import { canvasThemes } from "@/lib/canvas-theme";
 import { clampVideoSeconds } from "@/lib/media-size";
 import { formatBytes, formatDuration } from "@/lib/image-utils";
+import { compressImages, formatFileSize } from "@/lib/image-compress";
 import { deleteStoredMedia, resolveMediaUrl } from "@/services/file-storage";
 import { resolveImageUrl, ensureImagePreview, getImagePreviewRevision, previewUrlFor, subscribeImagePreviews, uploadImage } from "@/services/image-storage";
 import { createVideoGenerationTask, pollVideoGenerationTask, storeGeneratedVideo, type VideoGenerationTask } from "@/services/api/video";
@@ -81,12 +83,14 @@ export default function VideoPage() {
     const openConfigDialog = useConfigStore((state) => state.openConfigDialog);
     const addAsset = useAssetStore((state) => state.addAsset);
     const [prompt, setPrompt] = useState("");
+    const [promptLength, setPromptLength] = useState(0);
     const [references, setReferences] = useState<ReferenceImage[]>([]);
     const [results, setResults] = useState<GenerationResult[]>([]);
     const [logs, setLogs] = useState<GenerationLog[]>([]);
     const [running, setRunning] = useState(false);
-    const [logsOpen, setLogsOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
+    const [textareaExpanded, setTextareaExpanded] = useState(false);
     const [promptDialogOpen, setPromptDialogOpen] = useState(false);
     const [assetPickerOpen, setAssetPickerOpen] = useState(false);
     const [startedAt, setStartedAt] = useState(0);
@@ -96,6 +100,11 @@ export default function VideoPage() {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [referenceDragTarget, setReferenceDragTarget] = useState(false);
     const [autoRunToken, setAutoRunToken] = useState(0);
+    const [activeTab, setActiveTab] = useState("logs");
+    const [compressing, setCompressing] = useState(false);
+    const [compressProgress, setCompressProgress] = useState(0);
+    const [publishingModalOpen, setPublishingModalOpen] = useState(false);
+    const [videoToPublish, setVideoToPublish] = useState<GeneratedVideo | null>(null);
     const videoCommand = useWorkbenchAgentStore((state) => state.videoCommand);
     const clearVideoCommand = useWorkbenchAgentStore((state) => state.clearVideoCommand);
     const updateAgentTask = useWorkbenchAgentStore((state) => state.updateTask);
@@ -103,7 +112,49 @@ export default function VideoPage() {
     const agentTaskIdRef = useRef<string | undefined>(undefined);
 
     const model = effectiveConfig.videoModel || effectiveConfig.model;
+    const [calculatedPoints, setCalculatedPoints] = useState<number | null>(null);
     const canGenerate = Boolean(prompt.trim());
+
+    // 计算积分消耗
+    useEffect(() => {
+        const calculatePoints = () => {
+            if (!model) {
+                setCalculatedPoints(null);
+                return;
+            }
+
+            const decoded = model.indexOf('::') > -1 ? model.split('::') : null;
+            if (!decoded) {
+                setCalculatedPoints(null);
+                return;
+            }
+
+            const channelId = decoded[0];
+            const modelName = decoded[1];
+            const channel = config.channels.find((ch) => ch.id === channelId);
+            const modelData = channel?.models.find((m) => m.name === modelName);
+
+            if (!modelData || !modelData.pointsCost) {
+                setCalculatedPoints(null);
+                return;
+            }
+
+            if (modelData.billingType === 'per_request') {
+                setCalculatedPoints(modelData.pointsCost);
+            } else if (modelData.billingType === 'per_second') {
+                const seconds = Number(clampVideoSeconds(config.videoSeconds || "15"));
+                setCalculatedPoints(modelData.pointsCost * seconds);
+            } else {
+                setCalculatedPoints(null);
+            }
+        };
+
+        calculatePoints();
+    }, [model, config.videoSeconds, config.channels]);
+
+    useEffect(() => {
+        setPromptLength(prompt.length);
+    }, [prompt]);
 
     useEffect(() => {
         if (!running || !startedAt) return;
@@ -119,14 +170,60 @@ export default function VideoPage() {
         const selectedFiles = Array.from(files || []);
         const unsupported = selectedFiles.filter((file) => !file.type.startsWith("image/"));
         if (unsupported.length) message.warning(t("videoWorkbench.unsupportedFiles"));
-        const imageFiles = selectedFiles.filter((file) => file.type.startsWith("image/")).slice(0, 7 - references.length);
-        const nextReferences = await Promise.all(
-            imageFiles.map(async (file) => {
-                const image = await uploadImage(file);
-                return { id: nanoid(), name: file.name, type: image.mimeType, dataUrl: image.url, storageKey: image.storageKey };
-            }),
-        );
-        setReferences((value) => [...value, ...nextReferences].slice(0, 7));
+
+        const imageFiles = selectedFiles.filter((file) => file.type.startsWith("image/")).slice(0, 9 - references.length);
+
+        if (imageFiles.length === 0) return;
+
+        try {
+            setCompressing(true);
+            setCompressProgress(0);
+
+            // 压缩图片
+            const compressResults = await compressImages(imageFiles, {
+                maxWidth: 2000,
+                maxHeight: 2000,
+                minWidth: 300,
+                minHeight: 300,
+                quality: 0.85,
+                outputFormat: 'webp',
+                onProgress: (progress) => {
+                    setCompressProgress(Math.round(progress));
+                },
+            });
+
+            // 显示压缩信息
+            const totalOriginalSize = compressResults.reduce((sum, r) => sum + r.originalSize, 0);
+            const totalCompressedSize = compressResults.reduce((sum, r) => sum + r.compressedSize, 0);
+            const savedSize = totalOriginalSize - totalCompressedSize;
+            const savedPercent = Math.round((savedSize / totalOriginalSize) * 100);
+
+            message.success(
+                `已压缩 ${compressResults.length} 张图片，节省 ${formatFileSize(savedSize)} (${savedPercent}%)`
+            );
+
+            // 上传压缩后的图片
+            const nextReferences = await Promise.all(
+                compressResults.map(async (result) => {
+                    const image = await uploadImage(result.file);
+                    return {
+                        id: nanoid(),
+                        name: result.file.name,
+                        type: image.mimeType,
+                        dataUrl: image.url,
+                        storageKey: image.storageKey
+                    };
+                }),
+            );
+
+            setReferences((value) => [...value, ...nextReferences].slice(0, 9));
+        } catch (error) {
+            console.error('图片压缩失败:', error);
+            message.error(error instanceof Error ? error.message : '图片压缩失败');
+        } finally {
+            setCompressing(false);
+            setCompressProgress(0);
+        }
     };
 
     const handleReferenceDragEnter = (event: DragEvent<HTMLDivElement>) => {
@@ -157,17 +254,18 @@ export default function VideoPage() {
                 return;
             }
             const nextReferences = await Promise.all(
-                blobs.slice(0, 7 - references.length).map(async (blob, index) => {
+                blobs.slice(0, 9 - references.length).map(async (blob, index) => {
                     const image = await uploadImage(blob);
                     return { id: nanoid(), name: `clipboard-${index + 1}.png`, type: image.mimeType, dataUrl: image.url, storageKey: image.storageKey };
                 }),
             );
-            setReferences((value) => [...value, ...nextReferences].slice(0, 7));
+            setReferences((value) => [...value, ...nextReferences].slice(0, 9));
             message.success(t("videoWorkbench.clipboardAdded", { count: nextReferences.length }));
         } catch {
             message.error(t("videoWorkbench.clipboardEmpty"));
         }
     };
+
     const generate = async () => {
         const agentTaskId = agentTaskIdRef.current;
         agentTaskIdRef.current = undefined;
@@ -181,6 +279,7 @@ export default function VideoPage() {
         if (agentTaskId) updateAgentTask(agentTaskId, { status: "running", error: undefined });
         setPreviewLog(null);
         setResults([{ id: nanoid(), status: "pending" }]);
+        setActiveTab("results");
         const batchStartedAt = performance.now();
         setStartedAt(batchStartedAt);
         try {
@@ -198,7 +297,6 @@ export default function VideoPage() {
         }
     };
 
-    // Handle video-generation commands from the Agent panel by setting the prompt and optionally starting generation.
     useEffect(() => {
         if (!videoCommand || videoCommand.nonce === processedCommandRef.current) return;
         processedCommandRef.current = videoCommand.nonce;
@@ -217,7 +315,6 @@ export default function VideoPage() {
     useEffect(() => {
         if (!autoRunToken) return;
         void generate();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [autoRunToken]);
 
     const buildRequestSnapshot = () => {
@@ -255,12 +352,23 @@ export default function VideoPage() {
         message.success(t("common.addedToAssets"));
     };
 
+    const handlePublishVideo = (video: GeneratedVideo) => {
+        setVideoToPublish(video);
+        setPublishingModalOpen(true);
+    };
+
+    const handlePublishSuccess = () => {
+        message.success('视频发布任务已提交');
+        setPublishingModalOpen(false);
+        setVideoToPublish(null);
+    };
+
     const insertPickedAsset = async (payload: InsertAssetPayload) => {
         if (payload.kind === "text") {
             setPrompt(payload.content);
         } else if (payload.kind === "image") {
             const stored = await uploadImage(payload.dataUrl);
-            setReferences((value) => [...value, { id: nanoid(), name: payload.title, type: stored.mimeType, dataUrl: stored.url, storageKey: stored.storageKey }].slice(0, 7));
+            setReferences((value) => [...value, { id: nanoid(), name: payload.title, type: stored.mimeType, dataUrl: stored.url, storageKey: stored.storageKey }].slice(0, 9));
         }
         setAssetPickerOpen(false);
     };
@@ -356,7 +464,7 @@ export default function VideoPage() {
 
     const previewGenerationLog = (log: GenerationLog) => {
         setPreviewLog(log);
-        setLogsOpen(false);
+        setActiveTab("results");
         setPrompt(log.prompt);
         setReferences(log.references || []);
         if (log.config.videoModel || log.model) updateConfig("videoModel", log.config.videoModel || log.model);
@@ -371,116 +479,203 @@ export default function VideoPage() {
 
     return (
         <div className="flex h-full flex-col overflow-hidden bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
-            <main className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-3 lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)]">
-                <aside className="thin-scrollbar hidden min-h-0 overflow-y-auto rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:block">
-                    <LogPanel logs={logs} selectedLogIds={selectedLogIds} activeLogId={previewLog?.id} onSelectedLogIdsChange={setSelectedLogIds} onCreateSession={createSession} onDeleteSelected={() => setDeleteConfirmOpen(true)} onPreviewLog={previewGenerationLog} />
-                </aside>
+            <main className="thin-scrollbar flex-1 overflow-y-auto p-6">
+                <div className="mx-auto max-w-6xl space-y-6">
+                    {/* AI视频生成助手 - 无边框独立标题 */}
+                    <div className="mb-6 text-center">
+                        <h1 className="text-3xl font-bold text-stone-950 dark:text-stone-100">{t("videoWorkbench.title")}</h1>
+                        <p className="mt-2 text-base text-blue-600 dark:text-blue-400">{t("videoWorkbench.subtitle")}</p>
+                    </div>
 
-                <section className="grid gap-3 lg:min-h-0 lg:overflow-hidden xl:grid-cols-[420px_minmax(0,1fr)]">
-                    <div className="thin-scrollbar flex flex-col rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:min-h-0 lg:overflow-y-auto">
-                        <div className="flex items-start justify-between gap-3">
-                            <h1 className="text-2xl font-semibold text-stone-950 dark:text-stone-100">{t("videoWorkbench.title")}</h1>
-                            <div className="flex shrink-0 gap-2 lg:hidden">
-                                <Button icon={<History className="size-4" />} onClick={() => setLogsOpen(true)}>
-                                    {t("workbench.logs")}
-                                </Button>
-                                <Button icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
-                                    {t("workbench.settings")}
-                                </Button>
-                            </div>
+                    {/* 主输入区卡片 */}
+                    <div className="relative rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-950">
+                        {/* 提示词库和我的资产 - 放在边框外右上角 */}
+                        <div className="absolute -top-14 right-0 z-10 flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPromptDialogOpen(true)}
+                                className="flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+                            >
+                                <BookOpen className="size-4" />
+                                <span>{t("videoWorkbench.promptLibrary")}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setAssetPickerOpen(true)}
+                                className="flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+                            >
+                                <FolderPlus className="size-4" />
+                                <span>{t("videoWorkbench.myAssets")}</span>
+                            </button>
                         </div>
 
-                        <div className="mt-6 space-y-5">
-                            <div>
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                    <span className="text-base font-semibold">{t("workbench.prompt")}</span>
-                                    <div className="flex gap-2">
-                                        <Button size="small" icon={<BookOpen className="size-3.5" />} onClick={() => setPromptDialogOpen(true)}>
-                                            {t("workbench.viewPrompts")}
-                                        </Button>
-                                        <Button size="small" icon={<FolderPlus className="size-3.5" />} onClick={() => setAssetPickerOpen(true)}>
-                                            {t("workbench.viewAssets")}
-                                        </Button>
-                                    </div>
+                        <div className="p-8">
+                            {/* 文本输入框 */}
+                            <div className="relative">
+                                <Input.TextArea
+                                    value={prompt}
+                                    onChange={(e) => setPrompt(e.target.value)}
+                                    placeholder="上传商品图，详细描述你要创作的视频商品信息和生成要求。"
+                                    className={`!resize-none !rounded-xl !border-stone-200 !px-4 !pb-10 !pt-4 !text-base dark:!border-stone-800 transition-all duration-300 ${textareaExpanded ? "!min-h-[600px]" : "!min-h-[300px]"}`}
+                                    maxLength={4000}
+                                />
+
+                                {/* 右下角：字数统计 + 展开按钮 */}
+                                <div className="absolute bottom-3 right-3 flex items-center gap-3">
+                                    <span className="text-sm text-stone-400">{promptLength} / 4000</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTextareaExpanded(!textareaExpanded)}
+                                        className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-stone-600 transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+                                    >
+                                        {textareaExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                                        <span>{textareaExpanded ? t("videoWorkbench.collapse") : t("videoWorkbench.expand")}</span>
+                                    </button>
                                 </div>
-                                <Input.TextArea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={7} placeholder={t("videoWorkbench.promptPlaceholder")} />
                             </div>
 
-                            <div className="min-w-0">
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                    <span className="text-base font-semibold">{t("videoWorkbench.references")}</span>
-                                    <div className="flex gap-2">
-                                        <Button size="small" icon={<ClipboardPaste className="size-3.5" />} onClick={() => void addReferencesFromClipboard()}>
-                                            {t("workbench.clipboard")}
-                                        </Button>
-                                        <Button size="small" icon={<Upload className="size-3.5" />} onClick={() => fileInputRef.current?.click()}>
-                                            {t("workbench.upload")}
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div
-                                    className={`hover-scrollbar hover-scrollbar-hint flex min-h-24 w-full min-w-0 max-w-full gap-2 overflow-x-scroll overflow-y-hidden rounded-lg border border-dashed p-2 pb-3 overscroll-x-contain transition-colors ${referenceDragTarget ? "border-stone-900 bg-stone-100/80 dark:border-stone-100 dark:bg-stone-900/80" : "border-stone-300 dark:border-stone-700"}`}
-                                    onDragEnter={handleReferenceDragEnter}
-                                    onDragOver={(event) => {
-                                        event.preventDefault();
-                                        event.dataTransfer.dropEffect = "copy";
-                                    }}
-                                    onDragLeave={handleReferenceDragLeave}
-                                    onDrop={handleReferenceDrop}
-                                >
+                            {/* 参考图预览区 */}
+                            {references.length > 0 && (
+                                <div className="mt-4 flex flex-wrap gap-2">
                                     {references.map((item, index) => (
-                                        <div key={item.id} className="group relative size-20 shrink-0 overflow-hidden rounded-md border border-stone-200 dark:border-stone-800">
+                                        <div key={item.id} className="group relative size-16 shrink-0 overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800">
                                             <img src={previewUrlFor(item.storageKey) || item.dataUrl} alt={item.name} className="size-full object-cover" />
                                             <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">{index + 1}</span>
-                                            <ReferenceOrderButtons index={index} total={references.length} onMove={(offset) => setReferences((value) => moveListItem(value, index, offset))} />
-                                            <button type="button" className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded bg-black/60 text-white group-hover:flex" onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))} aria-label={t("videoWorkbench.removeImage")}>
-                                                <Trash2 className="size-3.5" />
+                                            <button
+                                                type="button"
+                                                className="absolute right-1 top-1 hidden size-5 items-center justify-center rounded bg-black/60 text-white group-hover:flex"
+                                                onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
+                                            >
+                                                <Trash2 className="size-3" />
                                             </button>
                                         </div>
                                     ))}
-                                    {!references.length ? <div className="flex min-w-full items-center justify-center text-sm text-stone-500">{referenceDragTarget ? t("videoWorkbench.dropReferences") : t("videoWorkbench.noImages")}</div> : null}
+                                </div>
+                            )}
+
+                            {/* 图片压缩进度 */}
+                            {compressing && (
+                                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/50">
+                                    <div className="mb-2 flex items-center justify-between text-sm">
+                                        <span className="font-medium text-blue-900 dark:text-blue-100">正在压缩图片...</span>
+                                        <span className="text-blue-700 dark:text-blue-300">{compressProgress}%</span>
+                                    </div>
+                                    <Progress
+                                        percent={compressProgress}
+                                        showInfo={false}
+                                        strokeColor="#3b82f6"
+                                        trailColor="#dbeafe"
+                                    />
+                                </div>
+                            )}
+
+                            {/* 底部控制栏 */}
+                            <div className="mt-6 flex items-center justify-between gap-4">
+                                {/* 左侧：加图按钮 */}
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="flex size-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                                >
+                                    <Plus className="size-5" />
+                                </button>
+
+                                {/* 中间：选择模型按钮 */}
+                                <button
+                                    type="button"
+                                    onClick={() => setModelSettingsOpen(true)}
+                                    className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 shadow-sm transition hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-600 dark:hover:bg-stone-800"
+                                >
+                                    <SlidersHorizontal className="size-4" />
+                                    <span>{model ? modelOptionLabel(config, model) : "选择模型"}</span>
+                                    <ChevronDown className="size-4 text-stone-400" />
+                                </button>
+
+                                {/* 右侧：积分 + 生成按钮 */}
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm font-medium text-stone-600 dark:text-stone-400">
+                                        积分: {calculatedPoints !== null ? (
+                                            <span className="text-orange-600">{calculatedPoints} 积分</span>
+                                        ) : (
+                                            <span className="text-stone-400">-</span>
+                                        )}
+                                    </span>
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        shape="circle"
+                                        icon={<ArrowRightIcon className="size-5" />}
+                                        loading={running}
+                                        disabled={!canGenerate || running}
+                                        onClick={() => void generate()}
+                                        className="!flex !size-12 !items-center !justify-center !bg-pink-500 !p-0 hover:!bg-pink-600"
+                                    />
                                 </div>
                             </div>
-
-                            <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-stone-800 dark:bg-stone-900 sm:hidden">
-                                <span className="truncate text-stone-500 dark:text-stone-400">
-                                    {modelOptionLabel(effectiveConfig, model)} · {normalizeResolution(effectiveConfig.vquality)}p · {videoSizeLabel(effectiveConfig.size)} · {normalizeVideoSeconds(effectiveConfig.videoSeconds)}s · {videoModeLabel(effectiveConfig.videoMode)}
-                                </span>
-                                <Button size="small" type="text" icon={<SlidersHorizontal className="size-4" />} onClick={() => setSettingsOpen(true)}>
-                                    {t("workbench.adjust")}
-                                </Button>
-                            </div>
-
-                            <div className="hidden gap-4 sm:grid sm:grid-cols-2">
-                                <GenerationSettings config={effectiveConfig} model={model} updateConfig={updateConfig} openConfigDialog={openConfigDialog} />
-                            </div>
-                        </div>
-
-                        <div className="mt-auto pt-6">
-                            <Button type="primary" size="large" block icon={<Sparkles className="size-4" />} loading={running} disabled={!canGenerate || running} onClick={() => void generate()}>
-                                {t("workbench.generate")}
-                            </Button>
                         </div>
                     </div>
 
-                    <div className="thin-scrollbar rounded-lg border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 lg:min-h-0 lg:overflow-y-auto lg:p-5">
-                        <div className="mb-4 flex items-center justify-between gap-3">
-                            <h2 className="text-xl font-semibold">{t("workbench.results")}</h2>
-                            {running ? <Tag className="m-0 px-2 py-1">{t("workbench.waiting", { time: formatDuration(elapsedMs) })}</Tag> : null}
-                        </div>
-                        {results.length ? (
-                            <div className="grid gap-4">
-                                {results.map((result) => (result.status === "success" && result.video ? <ResultVideoCard key={result.id} video={result.video} onDownload={downloadVideo} onSaveAsset={saveResultToAssets} /> : result.status === "failed" ? <FailedVideoCard key={result.id} error={result.error || t("workbench.generationFailed")} onRetry={retryResult} /> : <PendingVideoCard key={result.id} />))}
-                            </div>
-                        ) : (
-                            <div className="flex min-h-[320px] flex-col items-center justify-center rounded-lg border border-dashed border-stone-300 text-center dark:border-stone-700 lg:min-h-[560px]">
-                                <VideoIcon className="mb-4 size-11 text-stone-400" />
-                                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t("videoWorkbench.empty")} />
-                            </div>
-                        )}
+                    {/* Tab切换区域 */}
+                    <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-950">
+                        <Tabs
+                            activeKey={activeTab}
+                            onChange={setActiveTab}
+                            className="[&_.ant-tabs-nav]:!mb-0 [&_.ant-tabs-nav]:border-b [&_.ant-tabs-nav]:border-stone-200 [&_.ant-tabs-nav]:px-6 dark:[&_.ant-tabs-nav]:border-stone-800"
+                            items={[
+                                {
+                                    key: "logs",
+                                    label: t("videoWorkbench.generationRecord"),
+                                    children: (
+                                        <div className="p-6">
+                                            <LogPanel
+                                                logs={logs}
+                                                selectedLogIds={selectedLogIds}
+                                                activeLogId={previewLog?.id}
+                                                onSelectedLogIdsChange={setSelectedLogIds}
+                                                onCreateSession={createSession}
+                                                onDeleteSelected={() => setDeleteConfirmOpen(true)}
+                                                onPreviewLog={previewGenerationLog}
+                                            />
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: "results",
+                                    label: t("videoWorkbench.generationResult"),
+                                    children: (
+                                        <div className="p-6">
+                                            <div className="mb-4 flex items-center justify-between">
+                                                <h2 className="text-xl font-semibold">{t("workbench.results")}</h2>
+                                                {running ? <Tag className="m-0 px-2 py-1">{t("workbench.waiting", { time: formatDuration(elapsedMs) })}</Tag> : null}
+                                            </div>
+                                            {results.length ? (
+                                                <div className="grid gap-4">
+                                                    {results.map((result) =>
+                                                        result.status === "success" && result.video ? (
+                                                            <ResultVideoCard key={result.id} video={result.video} onDownload={downloadVideo} onSaveAsset={saveResultToAssets} onPublish={handlePublishVideo} />
+                                                        ) : result.status === "failed" ? (
+                                                            <FailedVideoCard key={result.id} error={result.error || t("workbench.generationFailed")} onRetry={retryResult} />
+                                                        ) : (
+                                                            <PendingVideoCard key={result.id} />
+                                                        )
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed border-stone-300 text-center dark:border-stone-700">
+                                                    <VideoIcon className="mb-4 size-11 text-stone-400" />
+                                                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t("videoWorkbench.empty")} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ),
+                                },
+                            ]}
+                        />
                     </div>
-                </section>
+                </div>
             </main>
+
+            {/* 隐藏的文件输入 */}
             <input
                 ref={fileInputRef}
                 type="file"
@@ -492,41 +687,53 @@ export default function VideoPage() {
                     event.target.value = "";
                 }}
             />
-            <Drawer title={t("workbench.logs")} placement="bottom" size="large" open={logsOpen} onClose={() => setLogsOpen(false)}>
-                <LogPanel logs={logs} selectedLogIds={selectedLogIds} activeLogId={previewLog?.id} onSelectedLogIdsChange={setSelectedLogIds} onCreateSession={createSession} onDeleteSelected={() => setDeleteConfirmOpen(true)} onPreviewLog={previewGenerationLog} />
-            </Drawer>
-            <Drawer title={t("workbench.settings")} placement="bottom" height="82vh" open={settingsOpen} onClose={() => setSettingsOpen(false)}>
-                <div className="grid grid-cols-2 gap-3 pb-4">
-                    <GenerationSettings config={effectiveConfig} model={model} updateConfig={updateConfig} openConfigDialog={openConfigDialog} />
+
+            {/* 模型设置弹窗 */}
+            <ModelSettingsModal
+                open={modelSettingsOpen}
+                onClose={() => setModelSettingsOpen(false)}
+                config={effectiveConfig}
+                currentModel={model}
+                onModelChange={(value) => updateConfig("videoModel", value)}
+                onConfigChange={(key, value) => updateConfig(key, value)}
+            />
+
+            {/* 高级设置抽屉（保留但不使用） */}
+            <Drawer title="高级参数设置" placement="right" width={480} open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+                <div className="space-y-6">
+                    <VideoSettingsPanel config={effectiveConfig} onConfigChange={(key, value) => updateConfig(key, value)} theme={canvasThemes[useThemeStore.getState().theme]} showTitle={false} className="space-y-4" />
                 </div>
             </Drawer>
+
+            {/* 提示词选择对话框 */}
             <PromptSelectDialog open={promptDialogOpen} onOpenChange={setPromptDialogOpen} onSelect={setPrompt} />
+
+            {/* 资产选择器 */}
             <AssetPickerModal open={assetPickerOpen} defaultTab="my-assets" onInsert={(payload) => void insertPickedAsset(payload)} onClose={() => setAssetPickerOpen(false)} />
+
+            {/* 删除确认对话框 */}
             <Modal title={t("workbench.deleteLogs")} open={deleteConfirmOpen} onCancel={() => setDeleteConfirmOpen(false)} onOk={deleteSelectedLogs} okText={t("common.delete")} okButtonProps={{ danger: true }} cancelText={t("common.cancel")}>
                 {t("workbench.deleteLogsConfirm", { count: selectedLogIds.length })}
             </Modal>
+
+            {/* 视频发布弹窗 */}
+            {videoToPublish && (
+                <PublishingModal
+                    open={publishingModalOpen}
+                    onClose={() => {
+                        setPublishingModalOpen(false);
+                        setVideoToPublish(null);
+                    }}
+                    onSuccess={handlePublishSuccess}
+                    defaultVideoUrl={videoToPublish.url}
+                />
+            )}
         </div>
     );
 }
 
-function GenerationSettings({ config, model, updateConfig, openConfigDialog }: { config: AiConfig; model: string; updateConfig: UpdateAiConfig; openConfigDialog: (shouldPromptContinue?: boolean) => void }) {
-    const theme = canvasThemes[useThemeStore((state) => state.theme)];
-    const { t } = useTranslation();
-
-    return (
-        <>
-            <label className="col-span-2 block min-w-0 sm:col-span-1">
-                <span className="mb-1.5 block text-sm font-semibold sm:mb-2 sm:text-base">{t("workbench.model")}</span>
-                <ModelPicker config={config} value={model} onChange={(value) => updateConfig("videoModel", value)} capability="video" fullWidth onMissingConfig={() => openConfigDialog(false)} />
-            </label>
-            <div className="col-span-2">
-                <VideoSettingsPanel config={config} onConfigChange={(key, value) => updateConfig(key, value)} theme={theme} showTitle={false} className="space-y-4" />
-            </div>
-        </>
-    );
-}
-
-function ResultVideoCard({ video, onDownload, onSaveAsset }: { video: GeneratedVideo; onDownload: (video: GeneratedVideo) => void; onSaveAsset: (video: GeneratedVideo) => void }) {
+// 组件保持不变
+function ResultVideoCard({ video, onDownload, onSaveAsset, onPublish }: { video: GeneratedVideo; onDownload: (video: GeneratedVideo) => void; onSaveAsset: (video: GeneratedVideo) => void; onPublish?: (video: GeneratedVideo) => void }) {
     const { t } = useTranslation();
     return (
         <div className="overflow-hidden rounded-lg border border-stone-200 bg-background dark:border-stone-800">
@@ -546,6 +753,11 @@ function ResultVideoCard({ video, onDownload, onSaveAsset }: { video: GeneratedV
                     <Button size="small" icon={<Download className="size-3.5" />} onClick={() => onDownload(video)}>
                         {t("common.download")}
                     </Button>
+                    {onPublish && (
+                        <Button size="small" type="primary" icon={<Upload className="size-3.5" />} onClick={() => onPublish(video)}>
+                            发布
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>
@@ -606,20 +818,19 @@ function LogPanel({
 
     return (
         <>
-            <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-base font-semibold">{t("workbench.logs")}</h2>
-                <Tag className="m-0">{logs.length}</Tag>
-            </div>
-            <div className="mb-4 flex flex-wrap gap-2">
-                <Button size="small" icon={<Plus className="size-3.5" />} onClick={onCreateSession}>
-                    {t("workbench.new")}
-                </Button>
-                <Button size="small" icon={<CheckSquare className="size-3.5" />} disabled={!logs.length} onClick={toggleAll}>
-                    {allSelected ? t("common.cancel") : t("workbench.selectAll")}
-                </Button>
-                <Button size="small" danger icon={<Trash2 className="size-3.5" />} disabled={!selectedLogIds.length} onClick={onDeleteSelected}>
-                    {t("common.delete")}
-                </Button>
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="text-base font-semibold">{t("videoWorkbench.historyRecord")}</h3>
+                <div className="flex gap-2">
+                    <Button size="small" icon={<Plus className="size-3.5" />} onClick={onCreateSession}>
+                        {t("workbench.new")}
+                    </Button>
+                    <Button size="small" icon={<CheckSquare className="size-3.5" />} disabled={!logs.length} onClick={toggleAll}>
+                        {allSelected ? t("common.cancel") : t("workbench.selectAll")}
+                    </Button>
+                    <Button size="small" danger icon={<Trash2 className="size-3.5" />} disabled={!selectedLogIds.length} onClick={onDeleteSelected}>
+                        {t("common.delete")}
+                    </Button>
+                </div>
             </div>
             <div className="space-y-3">
                 {logs.map((log) => (
@@ -633,16 +844,15 @@ function LogPanel({
 
 function LogCard({ log, selected, active, onSelectedChange, onClick }: { log: GenerationLog; selected: boolean; active: boolean; onSelectedChange: (checked: boolean) => void; onClick: () => void }) {
     const { t } = useTranslation();
+    const config = useConfigStore((state) => state.config);
     return (
-        <button type="button" className={`block w-full rounded-lg border p-2 text-left transition ${active ? "border-stone-900 bg-blue-50 dark:border-stone-100 dark:bg-blue-950/20" : "border-stone-200 bg-background hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-stone-900"}`} onClick={onClick}>
-            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2">
+        <button type="button" className={`block w-full rounded-lg border p-3 text-left transition ${active ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "border-stone-200 bg-background hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-stone-900"}`} onClick={onClick}>
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
                 <Checkbox className="mt-0.5" checked={selected} onClick={(event) => event.stopPropagation()} onChange={(event) => onSelectedChange(event.target.checked)} />
                 <div className="min-w-0">
                     <div className="truncate text-sm font-semibold leading-5">{log.title}</div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none">{log.size}</Tag>
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none">{log.resolution}p</Tag>
-                        <Tag className="m-0 flex h-6 items-center rounded-md px-1.5 text-xs leading-none">{log.seconds}s</Tag>
+                    <div className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                        {log.model ? modelOptionLabel(config, log.model) : "未知模型"}
                     </div>
                 </div>
                 <div className="grid justify-items-end gap-2">
@@ -658,6 +868,7 @@ function LogCard({ log, selected, active, onSelectedChange, onClick }: { log: Ge
     );
 }
 
+// 辅助函数保持不变
 async function readStoredLogs() {
     if (typeof window === "undefined") return [];
     try {
@@ -706,24 +917,6 @@ function serializeLog(log: GenerationLog): GenerationLog {
         references: log.references.map((item) => ({ ...item, dataUrl: item.storageKey ? "" : item.dataUrl })),
         video: log.video?.storageKey ? { ...log.video, url: "" } : log.video,
     };
-}
-
-function moveListItem<T>(items: T[], index: number, offset: number) {
-    const targetIndex = index + offset;
-    if (targetIndex < 0 || targetIndex >= items.length) return items;
-    const next = [...items];
-    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
-    return next;
-}
-
-function ReferenceOrderButtons({ index, total, onMove }: { index: number; total: number; onMove: (offset: number) => void }) {
-    if (total <= 1) return null;
-    return (
-        <div className="absolute inset-x-1 bottom-1 flex justify-between">
-            <Button size="small" className="!h-6 !w-6 !min-w-6 !rounded-full !bg-white/85 !p-0 !shadow-sm" icon={<ArrowLeft className="size-3" />} disabled={index <= 0} onClick={() => onMove(-1)} />
-            <Button size="small" className="!h-6 !w-6 !min-w-6 !rounded-full !bg-white/85 !p-0 !shadow-sm" icon={<ArrowRight className="size-3" />} disabled={index >= total - 1} onClick={() => onMove(1)} />
-        </div>
-    );
 }
 
 function normalizeLogConfig(log: Partial<GenerationLog>): GenerationLogConfig {

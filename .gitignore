@@ -39,3 +39,50 @@ deploy-package/
 server/.env
 web/.env.local
 web/.env.production.local
+
+# 开发文档（不提交到仓库）
+docs/
+project-docs/
+*.tar.gz
+*.zip
+
+# 测试和调试文件
+web/public/test-*.html
+web/public/debug-*.html
+web/public/admin-diagnostic.html
+web/public/check-token.html
+web/public/diagnose-auth.js
+web/*-script.js
+web/clear-*.js
+web/force-clear.js
+web/final-clear.js
+web/simple-clear.js
+web/test-*.sh
+web/*管理*.bat
+web/*管理*.md
+web/*总结.md
+web/server/
+web/src/pages/*-old.tsx
+web/src/pages/*-backup.tsx
+web/src/pages/*-fixed.tsx
+web/src/pages/*-simple.tsx
+web/src/pages/test-*.tsx
+web/src/pages/video/*-backup.tsx
+
+# 本地启动脚本
+启动*.bat
+启动*.ps1
+start-backend.bat
+fix-black-screen.sh
+
+# 其他无关文件
+excel_split_institutions.py
+installers/
+frontend/
+
+# 部署文档（保留脚本，排除文档）
+deploy/README.md
+deploy/deploy-guide.md
+deploy/manual-steps.txt
+deploy/FINAL-STEPS-MXPIN.txt
+deploy/*.bat

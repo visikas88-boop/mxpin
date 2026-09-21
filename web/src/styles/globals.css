@@ -123,8 +123,8 @@
     }
     html,
     body {
-        height: 100%;
-        overflow: hidden;
+        min-height: 100%;
+        overflow: auto;
     }
     body {
         @apply bg-background text-foreground;

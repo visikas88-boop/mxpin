@@ -10,10 +10,20 @@ export function ClientRootInit({ children }: { children: ReactNode }) {
     const { message } = App.useApp();
     const { t } = useTranslation();
     const handledConfigParams = useRef(false);
+    const loadedBackendModels = useRef(false);
     const importChannelCredentials = useConfigStore((state) => state.importChannelCredentials);
     const openConfigDialog = useConfigStore((state) => state.openConfigDialog);
+    const loadModelsFromBackend = useConfigStore((state) => state.loadModelsFromBackend);
 
     usePromptSourceScheduler();
+
+    // 从后端加载模型配置（仅执行一次）
+    useEffect(() => {
+        if (loadedBackendModels.current) return;
+        loadedBackendModels.current = true;
+        console.log('[应用启动] 加载后端模型配置');
+        loadModelsFromBackend();
+    }, [loadModelsFromBackend]);
 
     useEffect(() => {
         if (handledConfigParams.current) return;

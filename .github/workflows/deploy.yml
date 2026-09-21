@@ -21,6 +21,7 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
         port: 22
+        command_timeout: 30m
         script: |
           echo "=========================================="
           echo "开始自动部署 VideoFlow Pro"
@@ -28,51 +29,43 @@ jobs:
 
           # 进入项目目录（如果不存在则克隆）
           if [ ! -d "/var/www/videoflow-pro" ]; then
-            echo "首次部署：克隆仓库..."
+            echo ">>> 首次部署：克隆仓库..."
             mkdir -p /var/www
             cd /var/www
             git clone ${{ secrets.REPO_URL }} videoflow-pro
             cd videoflow-pro
+
+            # 首次部署：执行完整安装脚本
+            echo ">>> 执行完整部署脚本..."
+            chmod +x deploy/quick-deploy.sh
+            bash deploy/quick-deploy.sh
           else
-            echo "更新代码..."
+            echo ">>> 更新代码..."
             cd /var/www/videoflow-pro
             git fetch origin
             git reset --hard origin/main
             git pull origin main
+
+            echo ">>> 当前分支和提交："
+            git branch
+            git log -1 --oneline
+
+            # 更新部署：只更新代码和重启服务
+            echo ">>> 安装后端依赖..."
+            cd server
+            npm install --production
+
+            echo ">>> 构建前端..."
+            cd ../web
+            npm install
+            npm run build
+
+            echo ">>> 重启后端服务..."
+            pm2 restart videoflow-backend || pm2 start ../server/src/index.js --name videoflow-backend
+
+            echo ">>> 重载Nginx..."
+            systemctl reload nginx
           fi
-
-          echo "当前分支和提交："
-          git branch
-          git log -1 --oneline
-
-          # 安装/更新后端依赖
-          echo ""
-          echo "安装后端依赖..."
-          cd /var/www/videoflow-pro/server
-          npm install --production
-
-          # 构建前端
-          echo ""
-          echo "构建前端..."
-          cd /var/www/videoflow-pro/web
-          npm install
-          npm run build
-
-          # 重启后端服务
-          echo ""
-          echo "重启后端服务..."
-          pm2 restart videoflow-backend || pm2 start npm --name "videoflow-backend" -- start
-
-          # 重载Nginx
-          echo ""
-          echo "重载Nginx..."
-          systemctl reload nginx
-
-          # 验证部署
-          echo ""
-          echo "验证部署..."
-          sleep 2
-          curl -f http://localhost:3001/health || echo "警告：后端健康检查失败"
 
           echo ""
           echo "=========================================="
@@ -81,4 +74,4 @@ jobs:
           echo "=========================================="
 
           # 显示服务状态
-          pm2 status
+          pm2 status || echo "PM2未安装或无运行服务"

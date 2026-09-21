@@ -13,6 +13,9 @@ export type ChannelModel = {
     name: string;
     capability: ModelCapability;
     script?: string;
+    description?: string;
+    billingType?: "per_request" | "per_second";
+    pointsCost?: number;
 };
 
 export type ModelChannel = {
@@ -106,16 +109,16 @@ export const defaultConfig: AiConfig = {
     audioFormat: "mp3",
     audioSpeed: "1",
     audioInstructions: "",
-    videoSeconds: "6",
+    videoSeconds: "15",
     vquality: "720",
     videoGenerateAudio: "true",
     videoWatermark: "false",
-    videoMode: "frames",
+    videoMode: "reference",
     systemPrompt: "",
     reasoningEffort: "auto",
     models: ["default::gpt-image-2", "default::grok-imagine-video", "default::gpt-5.5", "default::gpt-4o-mini-tts"],
     quality: "auto",
-    size: "1:1",
+    size: "9:16",
     background: "",
     count: "1",
     canvasImageCount: "3",
@@ -142,6 +145,7 @@ type ConfigStore = {
     updateWebdavConfig: <K extends keyof WebdavSyncConfig>(key: K, value: WebdavSyncConfig[K]) => void;
     isAiConfigReady: (config: AiConfig, model: string) => boolean;
     openConfigDialog: (shouldPromptContinue?: boolean, tab?: ConfigTabKey) => void;
+    loadModelsFromBackend: () => Promise<void>;
     setConfigDialogOpen: (isOpen: boolean) => void;
     clearPromptContinue: () => void;
 };
@@ -235,6 +239,66 @@ export const useConfigStore = create<ConfigStore>()(
             openConfigDialog: (shouldPromptContinue = false, configTab = "channels") => set({ isConfigOpen: true, shouldPromptContinue, configTab }),
             setConfigDialogOpen: (isConfigOpen) => set({ isConfigOpen }),
             clearPromptContinue: () => set({ shouldPromptContinue: false }),
+            loadModelsFromBackend: async () => {
+                try {
+                    const token = localStorage.getItem('admin_token');
+                    if (!token) {
+                        console.log('[模型加载] 未找到 admin_token，跳过加载');
+                        return;
+                    }
+
+                    const response = await fetch('http://localhost:3001/api/models/channels', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (!response.ok) {
+                        console.warn('[模型加载] 后端响应失败:', response.status);
+                        return;
+                    }
+
+                    const data = await response.json();
+                    if (!data.success || !data.data?.channels) {
+                        console.warn('[模型加载] 后端数据格式错误:', data);
+                        return;
+                    }
+
+                    // 后端已经按 provider 分组并转换好格式，直接使用
+                    const backendChannels: ModelChannel[] = data.data.channels.map((ch: any) => ({
+                        id: ch.id,
+                        name: ch.name,
+                        baseUrl: ch.baseUrl,
+                        apiKey: ch.apiKey || '',
+                        apiFormat: ch.apiFormat as ApiCallFormat,
+                        models: ch.models.map((m: any) => ({
+                            name: m.name,
+                            capability: m.capability as ModelCapability,
+                            description: m.description,
+                            billingType: m.billingType || m.billing_type,
+                            pointsCost: m.pointsCost || m.points_cost
+                        }))
+                    }));
+
+                    // 合并后端渠道到现有配置（保留 default 渠道，添加后端渠道）
+                    const currentConfig = get().config;
+                    const localChannels = currentConfig.channels.filter(ch => ch.id === 'default');
+                    const mergedChannels = [...localChannels, ...backendChannels];
+
+                    set({
+                        config: {
+                            ...currentConfig,
+                            channels: mergedChannels,
+                            models: modelOptionsFromChannels(mergedChannels)
+                        }
+                    });
+
+                    console.log('[模型加载] 成功加载后端模型配置:', {
+                        渠道数: backendChannels.length,
+                        渠道列表: backendChannels.map(ch => `${ch.name} (${ch.models.length}个模型)`)
+                    });
+                } catch (error) {
+                    console.error('[模型加载] 加载失败:', error);
+                }
+            },
         }),
         {
             name: CONFIG_STORE_KEY,
@@ -265,11 +329,11 @@ export const useConfigStore = create<ConfigStore>()(
                         audioSpeed: config.audioSpeed || defaultConfig.audioSpeed,
                         audioInstructions: config.audioInstructions || "",
                         reasoningEffort: config.reasoningEffort || "auto",
-                        videoSeconds: config.videoSeconds || "6",
+                        videoSeconds: config.videoSeconds || "15",
                         vquality: config.vquality || "720",
                         videoGenerateAudio: config.videoGenerateAudio || "true",
                         videoWatermark: config.videoWatermark || "false",
-                        videoMode: config.videoMode === "reference" ? "reference" : "frames",
+                        videoMode: config.videoMode || "reference",
                         canvasImageCount: config.canvasImageCount || "3",
                         proxyEnabled: Boolean(config.proxyEnabled),
                         proxyUrl: config.proxyUrl || DEFAULT_LOCAL_PROXY_URL,
@@ -486,7 +550,7 @@ export function normalizeLocalProxyUrl(value: string) {
     return /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
 }
 
-/** Prefix an outgoing request with the local forwarding proxy so the browser is not blocked by CORS. */
+/** Prefix an outgoing provider request with the local forwarding proxy so the browser is not blocked by CORS. */
 export function withLocalProxy(url: string) {
     const { proxyEnabled, proxyUrl } = useConfigStore.getState().config;
     if (!proxyEnabled || !/^https?:\/\//i.test(url)) return url;
