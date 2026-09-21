@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/utils/api-config";
 import { useNavigate } from "react-router-dom";
 import { Layout, Menu, Avatar, Dropdown, message } from "antd";
 import {
@@ -63,7 +64,7 @@ function DashboardOverview() {
         setLoading(true);
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/admin/dashboard/stats", {
+            const response = await apiFetch("/admin/dashboard/stats", {
                 headers: { Authorization: `Bearer ${token}` },
             });
 

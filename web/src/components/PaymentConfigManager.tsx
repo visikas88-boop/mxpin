@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Table, Button, Form, Input, Switch, message, Modal, Space } from "antd";
 import { EditOutlined, SaveOutlined, ReloadOutlined } from "@ant-design/icons";
+import { apiFetch } from "@/utils/api-config";
 
 interface PaymentConfig {
     id: number;
@@ -34,7 +35,7 @@ export default function PaymentConfigManager() {
         setLoading(true);
         try {
             const token = localStorage.getItem("auth_token");
-            const response = await fetch("http://localhost:3001/api/payment-config", {
+            const response = await apiFetch("/payment-config", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -65,7 +66,7 @@ export default function PaymentConfigManager() {
             const values = await form.validateFields();
             const token = localStorage.getItem("auth_token");
 
-            const response = await fetch(`http://localhost:3001/api/payment-config/${editingConfig?.id}`, {
+            const response = await apiFetch(`/payment-config/${editingConfig?.id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -91,7 +92,7 @@ export default function PaymentConfigManager() {
     const handleToggleEnable = async (record: PaymentConfig) => {
         try {
             const token = localStorage.getItem("auth_token");
-            const response = await fetch(`http://localhost:3001/api/payment-config/${record.id}`, {
+            const response = await apiFetch(`/payment-config/${record.id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

@@ -1,4 +1,5 @@
 // =====================================================
+import { apiFetch } from "@/utils/api-config";
 // 发布历史页面
 // 路径: web/src/pages/publishing-history.tsx
 // 说明: 用户查看视频发布任务列表和详情
@@ -82,7 +83,7 @@ export default function PublishingHistoryPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3001/api/publishing/tasks', {
+            const response = await apiFetch('/publishing/tasks', {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -104,7 +105,7 @@ export default function PublishingHistoryPage() {
         setLogsLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3001/api/publishing/tasks/${taskId}`, {
+            const response = await apiFetch(`/publishing/tasks/${taskId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -131,7 +132,7 @@ export default function PublishingHistoryPage() {
     const handleRetry = async (taskId: number) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3001/api/publishing/tasks/${taskId}/retry`, {
+            const response = await apiFetch(`/publishing/tasks/${taskId}/retry`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });

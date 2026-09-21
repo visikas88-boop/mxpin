@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/utils/api-config";
 import { Card, Form, InputNumber, Button, message, Divider, Table, Modal, Input, Select, Space } from "antd";
 import { SaveOutlined, ReloadOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
@@ -40,7 +41,7 @@ export default function PointsSettingsPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/recharge/settings", {
+            const response = await apiFetch("/recharge/settings", {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -64,7 +65,7 @@ export default function PointsSettingsPage() {
     const fetchPackagesPreview = async (rate?: number) => {
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/recharge/packages", {
+            const response = await apiFetch("/recharge/packages", {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -103,7 +104,7 @@ export default function PointsSettingsPage() {
         setSaveLoading(true);
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/recharge/settings/exchange-rate", {
+            const response = await apiFetch("/recharge/settings/exchange-rate", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

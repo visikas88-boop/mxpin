@@ -1,4 +1,5 @@
 // =====================================================
+import { apiFetch } from "@/utils/api-config";
 // 社交账号管理页面 v2.0 - 国际化+修复登录检测
 // 路径: web/src/pages/social-accounts.tsx
 // 说明: 用户连接和管理社交账号，支持中英文切换
@@ -98,7 +99,7 @@ export default function SocialAccountsPage() {
                 return;
             }
 
-            const res = await fetch('http://localhost:3001/api/social-accounts', {
+            const res = await apiFetch('/social-accounts', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -139,7 +140,7 @@ export default function SocialAccountsPage() {
             const token = localStorage.getItem('auth_token')
                 || localStorage.getItem('admin_token')
                 || localStorage.getItem('token');
-            const res = await fetch('http://localhost:3001/api/social-accounts/sync', {
+            const res = await apiFetch('/social-accounts/sync', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -174,7 +175,7 @@ export default function SocialAccountsPage() {
                     const token = localStorage.getItem('auth_token')
                         || localStorage.getItem('admin_token')
                         || localStorage.getItem('token');
-                    const res = await fetch(`http://localhost:3001/api/social-accounts/${account.id}`, {
+                    const res = await apiFetch(`/social-accounts/${account.id}`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${token}`

@@ -1,6 +1,7 @@
 import { Modal, Tabs, QRCode, Button, message, Spin } from 'antd';
 import { AlipayOutlined, WechatOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useState, useEffect, useRef } from 'react';
+import { apiFetch } from '@/utils/api-config';
 
 interface PaymentModalProps {
     visible: boolean;
@@ -24,7 +25,7 @@ export default function PaymentModal({ visible, onClose, orderId, amount, onSucc
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3001/api/payment/create', {
+            const response = await apiFetch('/payment/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -59,7 +60,7 @@ export default function PaymentModal({ visible, onClose, orderId, amount, onSucc
     const checkPaymentStatus = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3001/api/payment/status/${orderId}`, {
+            const response = await apiFetch(`/payment/status/${orderId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -131,7 +132,7 @@ export default function PaymentModal({ visible, onClose, orderId, amount, onSucc
     const handleCancel = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3001/api/payment/cancel/${orderId}`, {
+            const response = await apiFetch(`/payment/cancel/${orderId}`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,

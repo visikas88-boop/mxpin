@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/utils/api-config";
 import { Table, Button, Space, Tag, Modal, Form, Input, Select, InputNumber, Switch, message, Popconfirm } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, SearchOutlined, CheckCircleOutlined } from "@ant-design/icons";
 
@@ -45,7 +46,7 @@ export default function ModelManagementPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/models", {
+            const response = await apiFetch("/models", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -125,7 +126,7 @@ export default function ModelManagementPage() {
     const handleDisable = async (id: number) => {
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch(`http://localhost:3001/api/models/${id}`, {
+            const response = await apiFetch(`/models/${id}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -148,7 +149,7 @@ export default function ModelManagementPage() {
     const handleDelete = async (id: number) => {
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch(`http://localhost:3001/api/models/${id}/permanent`, {
+            const response = await apiFetch(`/models/${id}/permanent`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -176,7 +177,7 @@ export default function ModelManagementPage() {
             );
 
             const token = localStorage.getItem("admin_token");
-            const response = await fetch(`http://localhost:3001/api/models/${id}/test`, {
+            const response = await apiFetch(`/models/${id}/test`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,

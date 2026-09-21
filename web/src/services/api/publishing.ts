@@ -8,8 +8,7 @@ import type {
   CostCalculation,
   PaginatedResponse
 } from '@/types/publishing';
-
-const API_BASE = 'http://localhost:3001/api';
+import { apiFetch, apiUrl } from '@/utils/api-config';
 
 // 获取token的辅助函数（支持多种token存储位置）
 function getAuthHeaders() {
@@ -30,7 +29,7 @@ function getAuthHeaders() {
  * 获取OAuth连接URL
  */
 export async function getConnectUrl(platform: string): Promise<ApiResponse<{ connectUrl: string; sessionId: string; state: string }>> {
-  const response = await fetch(`${API_BASE}/social-accounts/connect-url`, {
+  const response = await fetch(apiUrl('/social-accounts/connect-url'), {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ platform })
@@ -46,7 +45,7 @@ export async function verifyConnection(data: {
   code: string;
   state: string;
 }): Promise<ApiResponse<SocialAccount>> {
-  const response = await fetch(`${API_BASE}/social-accounts/verify-connection`, {
+  const response = await fetch(apiUrl('/social-accounts/verify-connection'), {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(data)
@@ -58,7 +57,7 @@ export async function verifyConnection(data: {
  * 获取用户已连接的账号列表
  */
 export async function getUserAccounts(): Promise<ApiResponse<SocialAccount[]>> {
-  const response = await fetch(`${API_BASE}/social-accounts`, {
+  const response = await fetch(apiUrl('/social-accounts'), {
     headers: getAuthHeaders()
   });
   return response.json();
@@ -68,7 +67,7 @@ export async function getUserAccounts(): Promise<ApiResponse<SocialAccount[]>> {
  * 断开账号连接
  */
 export async function disconnectAccount(id: number): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE}/social-accounts/${id}`, {
+  const response = await fetch(apiUrl(`/social-accounts/${id}`), {
     method: 'DELETE',
     headers: getAuthHeaders()
   });
@@ -79,7 +78,7 @@ export async function disconnectAccount(id: number): Promise<ApiResponse> {
  * 启用/禁用账号
  */
 export async function toggleAccount(id: number): Promise<ApiResponse<SocialAccount>> {
-  const response = await fetch(`${API_BASE}/social-accounts/${id}/toggle`, {
+  const response = await fetch(apiUrl(`/social-accounts/${id}/toggle`), {
     method: 'PUT',
     headers: getAuthHeaders()
   });
@@ -90,7 +89,7 @@ export async function toggleAccount(id: number): Promise<ApiResponse<SocialAccou
  * 刷新账号信息
  */
 export async function refreshAccountInfo(id: number): Promise<ApiResponse<SocialAccount>> {
-  const response = await fetch(`${API_BASE}/social-accounts/${id}/refresh`, {
+  const response = await fetch(apiUrl(`/social-accounts/${id}/refresh`), {
     method: 'POST',
     headers: getAuthHeaders()
   });
@@ -103,7 +102,7 @@ export async function refreshAccountInfo(id: number): Promise<ApiResponse<Social
  * 获取可用平台列表
  */
 export async function getPlatforms(): Promise<ApiResponse<PlatformPricing[]>> {
-  const response = await fetch(`${API_BASE}/publishing/platforms`, {
+  const response = await fetch(apiUrl('/publishing/platforms'), {
     headers: getAuthHeaders()
   });
   return response.json();
@@ -113,7 +112,7 @@ export async function getPlatforms(): Promise<ApiResponse<PlatformPricing[]>> {
  * 计算发布费用
  */
 export async function calculateCost(platforms: string[]): Promise<ApiResponse<CostCalculation>> {
-  const response = await fetch(`${API_BASE}/publishing/calculate-cost`, {
+  const response = await fetch(apiUrl('/publishing/calculate-cost'), {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ platforms })
@@ -125,7 +124,7 @@ export async function calculateCost(platforms: string[]): Promise<ApiResponse<Co
  * 创建发布任务
  */
 export async function createPublishingTask(data: CreatePublishingTaskForm): Promise<ApiResponse<PublishingTask>> {
-  const response = await fetch(`${API_BASE}/publishing/create-task`, {
+  const response = await fetch(apiUrl('/publishing/create-task'), {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(data)
@@ -142,7 +141,7 @@ export async function getTasks(params?: {
   offset?: number;
 }): Promise<ApiResponse<PaginatedResponse<PublishingTask>>> {
   const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
-  const response = await fetch(`${API_BASE}/publishing/tasks${queryString}`, {
+  const response = await fetch(apiUrl(`/publishing/tasks${queryString}`), {
     headers: getAuthHeaders()
   });
   return response.json();
@@ -155,7 +154,7 @@ export async function getTaskDetail(taskId: number): Promise<ApiResponse<{
   task: PublishingTask;
   logs: PublishingLog[];
 }>> {
-  const response = await fetch(`${API_BASE}/publishing/tasks/${taskId}`, {
+  const response = await fetch(apiUrl(`/publishing/tasks/${taskId}`), {
     headers: getAuthHeaders()
   });
   return response.json();
@@ -165,7 +164,7 @@ export async function getTaskDetail(taskId: number): Promise<ApiResponse<{
  * 重试失败任务
  */
 export async function retryTask(taskId: number): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE}/publishing/tasks/${taskId}/retry`, {
+  const response = await fetch(apiUrl(`/publishing/tasks/${taskId}/retry`), {
     method: 'POST',
     headers: getAuthHeaders()
   });
@@ -176,7 +175,7 @@ export async function retryTask(taskId: number): Promise<ApiResponse> {
  * 取消任务
  */
 export async function cancelTask(taskId: number): Promise<ApiResponse<PublishingTask>> {
-  const response = await fetch(`${API_BASE}/publishing/tasks/${taskId}`, {
+  const response = await fetch(apiUrl(`/publishing/tasks/${taskId}`), {
     method: 'DELETE',
     headers: getAuthHeaders()
   });

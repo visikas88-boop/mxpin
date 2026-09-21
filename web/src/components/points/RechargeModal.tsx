@@ -5,6 +5,7 @@ import { RechargeHeader } from "./RechargeHeader";
 import { RechargePackageGroup } from "./RechargePackageGroup";
 import { RechargeFooter } from "./RechargeFooter";
 import type { RechargePackagesResponse, UserInfo, PackageGroup } from "./types";
+import { apiFetch } from "@/utils/api-config";
 
 interface RechargeModalProps {
     open: boolean;
@@ -35,7 +36,7 @@ export function RechargeModal({ open, onClose, onSuccess }: RechargeModalProps) 
         setLoading(true);
         try {
             const token = localStorage.getItem("auth_token");
-            const response = await fetch("http://localhost:3001/api/recharge/packages", {
+            const response = await apiFetch("/recharge/packages", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -65,7 +66,7 @@ export function RechargeModal({ open, onClose, onSuccess }: RechargeModalProps) 
         setBuyLoading(true);
         try {
             const token = localStorage.getItem("auth_token");
-            const response = await fetch("http://localhost:3001/api/recharge/create-order", {
+            const response = await apiFetch("/recharge/create-order", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

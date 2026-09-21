@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from "@/utils/api-config";
 import { Card, Button, Tag, message, Spin, Modal } from 'antd';
 import { ThunderboltOutlined, FireOutlined, CrownOutlined } from '@ant-design/icons';
 import PaymentModal from '@/components/PaymentModal';
@@ -42,7 +43,7 @@ export default function RechargePage() {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch('http://localhost:3001/api/recharge/packages', {
+            const response = await apiFetch('/recharge/packages', {
                 headers,
             });
 
@@ -73,7 +74,7 @@ export default function RechargePage() {
             }
 
             // 1. 创建订单
-            const orderResponse = await fetch('http://localhost:3001/api/recharge/create-order', {
+            const orderResponse = await apiFetch('/recharge/create-order', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

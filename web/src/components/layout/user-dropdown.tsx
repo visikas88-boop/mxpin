@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MenuProps } from "antd";
 import { RechargeModal } from "@/components/points/RechargeModal";
+import { apiFetch } from "@/utils/api-config";
 
 interface UserInfo {
     id: number;
@@ -38,7 +39,7 @@ export function UserDropdown() {
                 return;
             }
 
-            const response = await fetch("http://localhost:3001/api/auth/me", {
+            const response = await apiFetch("/auth/me", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "@/utils/api-config";
 import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, Card, message, Tabs } from "antd";
 import { UserOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
@@ -25,7 +26,7 @@ export default function LoginPage() {
     const handleLogin = async (values: LoginFormData) => {
         setLoginLoading(true);
         try {
-            const response = await fetch("http://localhost:3001/api/auth/login", {
+            const response = await apiFetch("/auth/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -61,7 +62,7 @@ export default function LoginPage() {
 
         setRegisterLoading(true);
         try {
-            const response = await fetch("http://localhost:3001/api/auth/register", {
+            const response = await apiFetch("/auth/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

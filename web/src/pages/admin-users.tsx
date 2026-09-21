@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/utils/api-config";
 import { Table, Button, Space, Tag, Modal, Input, Select, message, Popconfirm, Descriptions, Tabs } from "antd";
 import { PlusOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, DollarOutlined, StopOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import type { TabsProps } from "antd";
@@ -193,7 +194,7 @@ export default function UserManagementPage() {
             const token = localStorage.getItem("admin_token") || localStorage.getItem("auth_token");
 
             // 先尝试删除，后端会检查是否有消费记录
-            const response = await fetch(`http://localhost:3001/api/admin/users/${userId}`, {
+            const response = await apiFetch(`/admin/users/${userId}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -225,7 +226,7 @@ export default function UserManagementPage() {
                     cancelText: '取消',
                     onOk: async () => {
                         // 强制删除（级联删除所有记录）
-                        const forceResponse = await fetch(`http://localhost:3001/api/admin/users/${userId}?force=true&cascade=true`, {
+                        const forceResponse = await apiFetch(`/admin/users/${userId}?force=true&cascade=true`, {
                             method: "DELETE",
                             headers: { Authorization: `Bearer ${token}` },
                         });

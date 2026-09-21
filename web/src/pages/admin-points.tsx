@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/utils/api-config";
 import { Table, Button, Space, Tag, DatePicker, Select, Input, Tabs, Card, Statistic, Form, InputNumber, message, Modal, Switch, Radio } from "antd";
 import { ReloadOutlined, SearchOutlined, DollarOutlined, ShoppingOutlined, RiseOutlined, FallOutlined, SaveOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import type { TabsProps } from "antd";
@@ -151,7 +152,7 @@ export default function PointsManagementPage() {
     const fetchStats = async () => {
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/admin/points/stats", {
+            const response = await apiFetch("/admin/points/stats", {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -167,7 +168,7 @@ export default function PointsManagementPage() {
     const fetchExchangeRate = async () => {
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/recharge/settings", {
+            const response = await apiFetch("/recharge/settings", {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -186,7 +187,7 @@ export default function PointsManagementPage() {
         setPackagesLoading(true);
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/admin/recharge/packages", {
+            const response = await apiFetch("/admin/recharge/packages", {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -208,7 +209,7 @@ export default function PointsManagementPage() {
     const fetchPackageGroups = async () => {
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/admin/recharge/package-groups", {
+            const response = await apiFetch("/admin/recharge/package-groups", {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -227,7 +228,7 @@ export default function PointsManagementPage() {
         setSaveRateLoading(true);
         try {
             const token = localStorage.getItem("admin_token");
-            const response = await fetch("http://localhost:3001/api/recharge/settings/exchange-rate", {
+            const response = await apiFetch("/recharge/settings/exchange-rate", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -286,7 +287,7 @@ export default function PointsManagementPage() {
             async onOk() {
                 try {
                     const token = localStorage.getItem("admin_token");
-                    const response = await fetch(`http://localhost:3001/api/admin/recharge/packages/${record.id}`, {
+                    const response = await apiFetch(`/admin/recharge/packages/${record.id}`, {
                         method: "DELETE",
                         headers: { Authorization: `Bearer ${token}` },
                     });
@@ -365,7 +366,7 @@ export default function PointsManagementPage() {
             async onOk() {
                 try {
                     const token = localStorage.getItem("admin_token");
-                    const response = await fetch(`http://localhost:3001/api/admin/recharge/package-groups/${record.group_id}`, {
+                    const response = await apiFetch(`/admin/recharge/package-groups/${record.group_id}`, {
                         method: "DELETE",
                         headers: { Authorization: `Bearer ${token}` },
                     });
@@ -433,7 +434,7 @@ export default function PointsManagementPage() {
                 ((transactionsPagination.current - 1) * transactionsPagination.pageSize).toString()
             );
 
-            const response = await fetch(`http://localhost:3001/api/admin/points/transactions?${params}`, {
+            const response = await apiFetch(`/admin/points/transactions?${params}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -465,7 +466,7 @@ export default function PointsManagementPage() {
             params.append("limit", ordersPagination.pageSize.toString());
             params.append("offset", ((ordersPagination.current - 1) * ordersPagination.pageSize).toString());
 
-            const response = await fetch(`http://localhost:3001/api/admin/points/recharge-orders?${params}`, {
+            const response = await apiFetch(`/admin/points/recharge-orders?${params}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 

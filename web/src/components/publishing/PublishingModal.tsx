@@ -9,6 +9,7 @@ import PlatformSelector from './PlatformSelector';
 import { createPublishingTask } from '@/services/api/publishing';
 import type { CreatePublishingTaskForm } from '@/types/publishing';
 import { useTranslation } from 'react-i18next';
+import { apiFetch } from '@/utils/api-config';
 
 interface PublishingModalProps {
   open: boolean;
@@ -44,7 +45,7 @@ export function PublishingModal({
   async function loadUserBalance() {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/auth/me', {
+      const response = await apiFetch('/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

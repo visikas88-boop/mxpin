@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { apiFetch } from "@/utils/api-config";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
@@ -247,7 +248,7 @@ export const useConfigStore = create<ConfigStore>()(
                         return;
                     }
 
-                    const response = await fetch('http://localhost:3001/api/models/channels', {
+                    const response = await apiFetch('/models/channels', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 

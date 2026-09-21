@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "@/utils/api-config";
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Button, Card, message } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
@@ -16,7 +17,7 @@ export default function AdminLoginPage() {
     const handleLogin = async (values: AdminLoginFormData) => {
         setLoading(true);
         try {
-            const response = await fetch("http://localhost:3001/api/auth/login", {
+            const response = await apiFetch("/auth/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

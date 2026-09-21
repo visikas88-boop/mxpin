@@ -1,4 +1,5 @@
 // =====================================================
+import { apiFetch } from "@/utils/api-config";
 // OAuth回调处理页面
 // 路径: web/src/pages/oauth-callback.tsx
 // 说明: 处理社交平台OAuth授权回调
@@ -44,7 +45,7 @@ export default function OAuthCallbackPage() {
 
             // 调用后端API验证连接
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3001/api/social-accounts/verify-connection', {
+            const response = await apiFetch('/social-accounts/verify-connection', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

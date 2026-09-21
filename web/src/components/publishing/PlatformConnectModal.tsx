@@ -9,6 +9,7 @@ import { Modal, Input, Tag, message, Alert, Spin } from 'antd';
 import { SearchOutlined, CheckCircleFilled, InfoCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import { getConnectUrl } from '@/services/api/publishing';
 import { useTranslation } from 'react-i18next';
+import { apiFetch } from '@/utils/api-config';
 
 interface Platform {
   id: string;
@@ -203,7 +204,7 @@ export function PlatformConnectModal({
   const fetchSupportedPlatforms = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/platforms/supported');
+      const response = await apiFetch('/platforms/supported');
       const result = await response.json();
 
       if (result.success && result.data) {
